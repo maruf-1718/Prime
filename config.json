@@ -1,161 +1,137 @@
-{
-    "facebookAccount": {
-        "email": "",
-        "password": "",
-        "2FASecret": "",
-        "i_user": "",
-        "proxy": null,
-        "userAgent": "Mozilla/5.0 (Linux; Android 12; M2102J20SG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Mobile Safari/537.36",
-        "intervalGetNewCookie": 1440,
-        "notes": "Automatically retrieves new cookies every x minutes. Recommended: 1440 (1 day)."
+[
+    {
+        "key": "dbln",
+        "value": "%7B%2261573312863084%22%3A%22IEufLj2d%22%7D",
+        "domain": "facebook.com",
+        "path": "/login/device-based/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "antiInbox": false,
-    "language": "en",
-    "notesLanguage": "change language using ISO 639-1 code",
-    "nickNameBot": "—͞ 𝐐𝐔𝐄𝐄𝐍 🎀❤️‍🩹",
-    "prefix": "/",
-    "adminOnly": {
-        "enable": false,
-        "ignoreCommand": []
+    {
+        "key": "datr",
+        "value": "t_G0acNAXuwZN_s-a9_YDh9z",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "adminBot": [
-        "61583835186508",
-        "100038078183263",
-        " "
-    ],
-    "reactUnsend": {
-        "enable": true,
-        "onlyAdmin": true,
-        "emojis": [
-            "😡",
-            "🤬"
-        ],
-        "notes": "If enable = true, bot will unsend any message reacted with these emojis. If onlyAdmin = true, only adminBot IDs can trigger it."
+    {
+        "key": "sb",
+        "value": "t_G0aShBnZ5AJzjD91yucU0k",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "whiteListMode": {
-        "enable": false,
-        "whiteListIds": [
-            "100083039411474",
-            "100063840894133"
-        ],
-        "notes": "If enabled, only IDs in whiteListIds can use the bot."
+    {
+        "key": "pas",
+        "value": "61552085301123%3AajOt2qLsq7",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "whiteListModeThread": {
-        "enable": false,
-        "whiteListThreadIds": [],
-        "notes": "If enabled, only threads in whiteListThreadIds can use the bot."
+    {
+        "key": "ps_l",
+        "value": "1",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "database": {
-        "type": "sqlite",
-        "uriMongodb": "",
-        "autoSyncWhenStart": false,
-        "autoRefreshThreadInfoFirstTime": true,
-        "notes": "Recommended using 'mongodb' or 'sqlite'."
+    {
+        "key": "ps_n",
+        "value": "1",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "timeZone": "Asia/Dhaka",
-    "credentials": {
-        "gmailAccount": {
-            "email": "botofnexxo@gmail.com",
-            "clientId": "848792512039-g3mlfd39p9ttu82ga4kahk6kadjr0hcp.apps.googleusercontent.com",
-            "clientSecret": "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",
-            "refreshToken": " ",
-            "apiKey": ""
-        },
-        "gRecaptcha": {
-            "siteKey": "6LfU0TUrAAAAAJVy_tm-q9xlEIEeyBK4N8VwuGdZ",
-            "secretKey": "6LfU0TUrAAAAAOR_CE7oZV-8Eo83LsJmb12-lWFb"
-        }
+    {
+        "key": "wl_cbv",
+        "value": "v2%3Bclient_version%3A3110%3Btimestamp%3A1773466225",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "dashBoard": {
-        "enable": true,
-        "expireVerifyCode": 300000,
-        "port": 3001
+    {
+        "key": "vpd",
+        "value": "v1%3B784x393x2.75",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "serverUptime": {
-        "enable": false,
-        "port": 3001,
-        "socket": {
-            "enable": true,
-            "channelName": "uptime",
-            "verifyToken": ""
-        }
+    {
+        "key": "dpr",
+        "value": "2.75",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "autoRestart": {
-        "time": null,
-        "notes": "Example: 60000 (1min), 3600000 (1hr), 0 0 * * * (daily)."
+    {
+        "key": "locale",
+        "value": "bn_IN",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "autoUptime": {
-        "enable": false,
-        "timeInterval": 180,
-        "url": "",
-        "notes": "Time in seconds. Recommended for uptime monitors."
+    {
+        "key": "wd",
+        "value": "980x1955",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "autoLoadScripts": {
-        "enable": false,
-        "ignoreCmds": "",
-        "ignoreEvents": "",
-        "notes": "Automatically reloads scripts if edited."
+    {
+        "key": "c_user",
+        "value": "61573312863084",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "autoRefreshFbstate": true,
-    "autoReloginWhenChangeAccount": false,
-    "autoRestartWhenListenMqttError": true,
-    "restartListenMqtt": {
-        "enable": true,
-        "timeRestart": 60000,
-        "delayAfterStopListening": 2000,
-        "logNoti": true,
-        "notes": "Restart listener every 1 minute."
+    {
+        "key": "fr",
+        "value": "1eRyC6IWRyGFViRxH.AWc_ucqT9CN2Com2mGYItMfVKbHLYe7dt92AITiRm6GlroF7MSw.Bp1pg4..AAA.0.0.Bp1pg4.AWdexawO5gGJsdsgbgtu6eguaVA",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "notiWhenListenMqttError": {
-        "notes": "Notification settings when MQTT stops listening.",
-        "gmail": {
-            "enable": false,
-            "emailGetNoti": ""
-        },
-        "telegram": {
-            "enable": false,
-            "botToken": "",
-            "chatId": ""
-        },
-        "discordHook": {
-            "enable": false,
-            "webhookUrl": ""
-        }
+    {
+        "key": "xs",
+        "value": "14%3AxLnn9-wL9xaXRQ%3A2%3A1775671349%3A-1%3A-1%3A%3AAcz3N0u1DKNJ7h3vi0nHJDRcfBJ4tgZl4tQOz2j-Lg",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     },
-    "hideNotiMessage": {
-        "commandNotFound": false,
-        "adminOnly": false,
-        "threadBanned": false,
-        "userBanned": false,
-        "needRoleToUseCmd": false,
-        "needRoleToUseCmdOnReply": false,
-        "needRoleToUseCmdOnReaction": false
-    },
-    "logEvents": {
-        "disableAll": false,
-        "message": true,
-        "message_reaction": true,
-        "message_unsend": true,
-        "message_reply": true,
-        "event": true,
-        "read_receipt": false,
-        "typ": false,
-        "presence": false
-    },
-    "optionsFca": {
-        "forceLogin": true,
-        "listenEvents": true,
-        "updatePresence": true,
-        "listenTyping": true,
-        "logLevel": "error",
-        "selfListen": false,
-        "selfListenEvent": true,
-        "autoMarkDelivery": false,
-        "autoReconnect": true,
-        "notes": "Docs: https://github.com/ntkhang03/fb-chat-api/blob/master/DOCS.md#apisetoptionsoptions"
-    },
-    "noPrefix": {
-        "enable": false,
-        "notes": "true = only bot admins can use commands without prefix | false = everyone must use prefix"
+    {
+        "key": "presence",
+        "value": "C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1775671356273%2C%22v%22%3A1%7D",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-04-08T18:02:40.513Z",
+        "lastAccessed": "2026-04-08T18:02:40.513Z"
     }
-}
+]
