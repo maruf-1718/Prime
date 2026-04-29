@@ -109,7 +109,7 @@ ${social.signature
           : "N/A"
       }
 
-✨ Powered by 𝐌ᴏʜᴀᴍᴍᴀᴅ Aᴋᴀsʜ
+✨ Powered by 𝐌ᴏʜᴀᴍᴍᴀᴅ Maidul
 `;
 
       await api.editMessage(msg, wait.messageID);
