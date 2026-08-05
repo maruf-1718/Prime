@@ -2,7 +2,7 @@ module.exports = {
   config: {
     name: "autoreact",
     version: "4.4.0",
-    author: "MOHAMMAD AKASH",
+    author: "Mohammad Maruf",
     role: 0,
     category: "system",
     shortDescription: "Auto react (emoji + text)",
