@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "owner",
     version: "1.3.0",
-    author: "—"𝐈𝐭'𝐳 𝐌𝐚𝐢𝐝𝐮𝐥🫰",
+    author: "Mohammad Maruf",
     role: 0,
     shortDescription: "Owner information with image",
     category: "Information",
@@ -18,17 +18,17 @@ module.exports = {
   onStart: async function ({ api, event }) {
     const ownerText = 
 `╭─ 👑 Oᴡɴᴇʀ Iɴғᴏ 👑 ─╮
-│ 👤 Nᴀᴍᴇ       : Mᴏʜᴀᴍᴍᴀᴅ 𝐌𝐚𝐢𝐝𝐮𝐥
-│ 🧸 Nɪᴄᴋ       : —"𝐈𝐭'𝐳 🫶🫰
-│ 🎂 Aɢᴇ        : 18+
+│ 👤 Nᴀᴍᴇ       : Mohammad Maruf
+│ 🧸 Nɪᴄᴋ       : Maruf
+│ 🎂 Aɢᴇ        : 16+
 │ 💘 Rᴇʟᴀᴛɪᴏɴ : Sɪɴɢʟᴇ
 │ 🎓 Pʀᴏғᴇssɪᴏɴ : Sᴛᴜᴅᴇɴᴛ
-│ 📚 Eᴅᴜᴄᴀᴛɪᴏɴ : Iɴᴛᴇʀ 2ɴᴅ Yᴇᴀʀ
-│ 🏡 Lᴏᴄᴀᴛɪᴏɴ : 𝗥𝗮𝗻𝗴𝗽𝘂𝗿 - 𝗞𝘂𝗿𝗶𝗴𝗿𝗮𝗺
+│ 📚 Eᴅᴜᴄᴀᴛɪᴏɴ : Secret
+│ 🏡 Lᴏᴄᴀᴛɪᴏɴ : Rangpur - Kurigram
 ├─ 🔗 Cᴏɴᴛᴀᴄᴛ ─╮
-│ 📘 Facebook  : Mohammad.Maidul.20 
-│ 💬 Messenger: m.Mohammad.Maidul.20
-│ 📞 WhatsApp  : wa.me/01707791855
+│ 📘 Facebook  : Mohammad Maruf
+│ 💬 Telegram : 01994001246 
+│ 📞 WhatsApp  : 01994001246
 ╰────────────────╯`;
 
     const cacheDir = path.join(__dirname, "cache");
@@ -36,7 +36,7 @@ module.exports = {
 
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
-    const imgLink = "https://i.imgur.com/1G4ZhU7.jpeg";
+    const imgLink = "https://i.ibb.co/ynVJVbQ5/4a85abc3a112.jpg";
 
     const send = () => {
       api.sendMessage(
