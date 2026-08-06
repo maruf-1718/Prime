@@ -14,7 +14,7 @@ module.exports = {
   config: {
     name: "4k",
     version: "1.7",
-    author: "MahMUD",
+    author: "Mohammad Maruf",
     countDown: 10,
     role: 0,
     category: "AI",
