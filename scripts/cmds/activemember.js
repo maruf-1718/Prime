@@ -5,7 +5,7 @@ module.exports = {
     name: "activemember",
     aliases: ["am"],
     version: "1.0",
-    author: "nexo_here",
+    author: "Mohammad Maruf",
     countDown: 5,
     role: 0,
     shortDescription: "Get the top 15 users by message count in the current chat",
