@@ -4,7 +4,7 @@ module.exports = {
   config: {
     name: "autoinvite",
     version: "2.5",
-    author: "Mohammad Akash",
+    author: "Mohammad Maruf",
     category: "events"
   },
 
@@ -31,15 +31,15 @@ module.exports = {
       const boldName = userName.split("").map(c => boldMap[c] || c).join("");
 
       const form = {
-        body: `🛑 এই বলদ....!! 😹  
+        body: `🛑 এই ছাগল....!! 😹  
 ${boldName}  
 💬 গ্রুপ থেকে লিভ নেওয়া কি মুখের কথা নাকি? 😏  
 👑 যে গ্রুপে আমি থাকি..?? 🐸  
-⚠️ সেই গ্রুপ থেকে লিভ নেওয়া অসম্ভব ভাই! 😂  
-🌀 আবার অ্যাড করে দিলাম 😇  
+⚠️ সেই গ্রুপ থেকে লিভ নেওয়া অসম্ভব! 😂  
+🌀 যা আবার অ্যাড করে দিলাম 😇  
 
 ━━━━━━━━━━━━━━━
-👑 𝗕𝗼𝘁 𝗢𝘄𝗻𝗲𝗿 : 𝗠𝗼𝗵𝗮𝗺𝗺𝗮𝗱 𝗠𝗮𝗶𝗱𝘂𝗹 💎
+👑 𝗕𝗼𝘁 𝗢𝘄𝗻𝗲𝗿 : 𝗠𝗼𝗵𝗮𝗺𝗺𝗮𝗱 𝗠𝗮𝗿𝘂𝗳 👿🪽
 ━━━━━━━━━━━━━━━`
       };
 
