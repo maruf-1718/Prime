@@ -8,7 +8,7 @@ module.exports.config = {
   author: "Mohammad Maruf",
   countDown: 5,
   role: 0,
-  shortDescription: "Premium futuristic time card",
+  shortDescription: "Stylish Bangladesh time card",
   category: "fun",
   guide: { en: "{p}time" }
 };
@@ -77,7 +77,43 @@ module.exports.onStart = async function ({ api, event }) {
     const monthName = months[month];
 
     // ═════════════════════════════════════
-    // 🎨 GENERATE CARD
+    // ✨ UNICODE STYLISH FONT
+    // ═════════════════════════════════════
+
+    const fancy = (text) => {
+      const map = {
+        A:"𝐀",B:"𝐁",C:"𝐂",D:"𝐃",E:"𝐄",F:"𝐅",G:"𝐆",
+        H:"𝐇",I:"𝐈",J:"𝐉",K:"𝐊",L:"𝐋",M:"𝐌",N:"𝐍",
+        O:"𝐎",P:"𝐏",Q:"𝐐",R:"𝐑",S:"𝐒",T:"𝐓",U:"𝐔",
+        V:"𝐕",W:"𝐖",X:"𝐗",Y:"𝐘",Z:"𝐙",
+
+        a:"𝐚",b:"𝐛",c:"𝐜",d:"𝐝",e:"𝐞",f:"𝐟",g:"𝐠",
+        h:"𝐡",i:"𝐢",j:"𝐣",k:"𝐤",l:"𝐥",m:"𝐦",n:"𝐧",
+        o:"𝐨",p:"𝐩",q:"𝐪",r:"𝐫",s:"𝐬",t:"𝐭",u:"𝐮",
+        v:"𝐯",w:"𝐰",x:"𝐱",y:"𝐲",z:"𝐳",
+
+        "0":"𝟎","1":"𝟏","2":"𝟐","3":"𝟑","4":"𝟒",
+        "5":"𝟓","6":"𝟔","7":"𝟕","8":"𝟖","9":"𝟗"
+      };
+
+      return [...String(text)]
+        .map(char => map[char] || char)
+        .join("");
+    };
+
+    // ═════════════════════════════════════
+    // 💬 MESSAGE
+    // ═════════════════════════════════════
+
+    const stylishMessage =
+      `━━━✧ 🕐 ${fancy("BANGLADESH TIME")} 🕐 ✧━━━\n\n` +
+      `📅 ${fancy(`${dayName}, ${date} ${monthName} ${year}`)}\n` +
+      `⏰ ${fancy(`${timeStr} ${ampm}`)}\n` +
+      `🇧🇩 ${fancy("BST")} • ${fancy("GMT+6")}\n\n` +
+      `✨ ${fancy("Mohammad Maruf")} ✨`;
+
+    // ═════════════════════════════════════
+    // 🎨 GENERATE IMAGE CARD
     // ═════════════════════════════════════
 
     const filePath = await generateTimeCard({
@@ -92,17 +128,17 @@ module.exports.onStart = async function ({ api, event }) {
 
     await api.sendMessage(
       {
-        body:
-          `✦ ${dayName}, ${date} ${monthName} ${year}\n` +
-          `◈ ${timeStr} ${ampm}\n` +
-          `🇧🇩 Bangladesh Standard Time • GMT+6`,
+        body: stylishMessage,
         attachment: fs.createReadStream(filePath)
       },
       threadID,
       messageID
     );
 
-    // Cleanup
+    // ═════════════════════════════════════
+    // 🧹 CLEAN CACHE
+    // ═════════════════════════════════════
+
     setTimeout(() => {
       try {
         if (fs.existsSync(filePath)) {
@@ -113,6 +149,7 @@ module.exports.onStart = async function ({ api, event }) {
 
   } catch (error) {
     console.error("TIME COMMAND ERROR:", error);
+
     return api.sendMessage(
       "❌ Time card generate করা যায়নি।",
       threadID,
@@ -123,7 +160,7 @@ module.exports.onStart = async function ({ api, event }) {
 
 
 // ═══════════════════════════════════════
-// 🕒 FUTURISTIC TIME CARD
+// 🕐 FUTURISTIC TIME CARD
 // ═══════════════════════════════════════
 
 async function generateTimeCard(data) {
@@ -135,13 +172,14 @@ async function generateTimeCard(data) {
   const ctx = canvas.getContext("2d");
 
   // ═════════════════════════════════════
-  // AMOLED BLACK BACKGROUND
+  // 🖤 AMOLED BLACK
   // ═════════════════════════════════════
 
   ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, width, height);
 
-  // Subtle red radial glow
+  // Red ambient glow
+
   const glow = ctx.createRadialGradient(
     width / 2,
     180,
@@ -153,12 +191,12 @@ async function generateTimeCard(data) {
 
   glow.addColorStop(
     0,
-    "rgba(255,0,55,0.15)"
+    "rgba(255,0,55,0.16)"
   );
 
   glow.addColorStop(
-    0.5,
-    "rgba(255,0,55,0.04)"
+    0.45,
+    "rgba(255,0,55,0.05)"
   );
 
   glow.addColorStop(
@@ -170,7 +208,7 @@ async function generateTimeCard(data) {
   ctx.fillRect(0, 0, width, 600);
 
   // ═════════════════════════════════════
-  // FUTURISTIC GRID
+  // GRID
   // ═════════════════════════════════════
 
   ctx.strokeStyle =
@@ -193,7 +231,7 @@ async function generateTimeCard(data) {
   }
 
   // ═════════════════════════════════════
-  // CORNER DECORATIONS
+  // CORNER HUD
   // ═════════════════════════════════════
 
   ctx.strokeStyle = "#ff1744";
@@ -257,21 +295,18 @@ async function generateTimeCard(data) {
   );
 
   // ═════════════════════════════════════
-  // BIG DIGITAL CLOCK
+  // DIGITAL CLOCK
   // ═════════════════════════════════════
 
   ctx.save();
 
-  ctx.shadowColor =
-    "#ff003c";
-
+  ctx.shadowColor = "#ff003c";
   ctx.shadowBlur = 45;
 
   ctx.font =
     'bold 108px "Courier New"';
 
-  ctx.fillStyle =
-    "#ffffff";
+  ctx.fillStyle = "#ffffff";
 
   ctx.fillText(
     data.timeStr,
@@ -281,13 +316,12 @@ async function generateTimeCard(data) {
 
   ctx.restore();
 
-  // AM / PM
+  // AM PM
 
   ctx.font =
     'bold 35px "Courier New"';
 
-  ctx.fillStyle =
-    "#ff1744";
+  ctx.fillStyle = "#ff1744";
 
   ctx.fillText(
     data.ampm,
@@ -302,8 +336,7 @@ async function generateTimeCard(data) {
   ctx.font =
     'bold 58px "Arial"';
 
-  ctx.fillStyle =
-    "#ffffff";
+  ctx.fillStyle = "#ffffff";
 
   ctx.fillText(
     data.dayName.toUpperCase(),
@@ -313,9 +346,7 @@ async function generateTimeCard(data) {
 
   // Accent line
 
-  ctx.strokeStyle =
-    "#ff1744";
-
+  ctx.strokeStyle = "#ff1744";
   ctx.lineWidth = 4;
 
   ctx.beginPath();
@@ -325,7 +356,7 @@ async function generateTimeCard(data) {
 
   ctx.stroke();
 
-  // DATE
+  // Full date
 
   ctx.font =
     '28px "Arial"';
@@ -348,8 +379,6 @@ async function generateTimeCard(data) {
   const panelW = width - 130;
   const panelH = 470;
 
-  // Panel background
-
   roundRect(
     ctx,
     panelX,
@@ -364,7 +393,7 @@ async function generateTimeCard(data) {
 
   ctx.fill();
 
-  // Panel border
+  // Border
 
   ctx.strokeStyle =
     "rgba(255,23,68,0.45)";
@@ -373,11 +402,9 @@ async function generateTimeCard(data) {
 
   ctx.stroke();
 
-  // Panel top accent
+  // Accent
 
-  ctx.strokeStyle =
-    "#ff1744";
-
+  ctx.strokeStyle = "#ff1744";
   ctx.lineWidth = 4;
 
   ctx.beginPath();
@@ -394,13 +421,12 @@ async function generateTimeCard(data) {
 
   ctx.stroke();
 
-  // Month title
+  // Month
 
   ctx.font =
     'bold 30px "Arial"';
 
-  ctx.fillStyle =
-    "#ff1744";
+  ctx.fillStyle = "#ff1744";
 
   ctx.fillText(
     `${data.monthName.toUpperCase()} ${data.year}`,
@@ -423,8 +449,10 @@ async function generateTimeCard(data) {
   ];
 
   const cellW = 118;
+
   const startX =
-    (width - cellW * 7) / 2 + cellW / 2;
+    (width - cellW * 7) / 2 +
+    cellW / 2;
 
   const headerY =
     panelY + 105;
@@ -447,7 +475,7 @@ async function generateTimeCard(data) {
   });
 
   // ═════════════════════════════════════
-  // CALENDAR GRID
+  // CALENDAR DAYS
   // ═════════════════════════════════════
 
   const firstDay =
@@ -490,15 +518,13 @@ async function generateTimeCard(data) {
       const y =
         gridY + row * rowHeight;
 
-      // Current day circle
+      // Today's date
 
       if (dayNumber === data.date) {
 
         ctx.save();
 
-        ctx.shadowColor =
-          "#ff1744";
-
+        ctx.shadowColor = "#ff1744";
         ctx.shadowBlur = 28;
 
         ctx.beginPath();
@@ -511,8 +537,7 @@ async function generateTimeCard(data) {
           Math.PI * 2
         );
 
-        ctx.fillStyle =
-          "#ff1744";
+        ctx.fillStyle = "#ff1744";
 
         ctx.fill();
 
@@ -521,8 +546,7 @@ async function generateTimeCard(data) {
         ctx.font =
           'bold 22px "Arial"';
 
-        ctx.fillStyle =
-          "#000000";
+        ctx.fillStyle = "#000000";
 
       } else {
 
@@ -567,8 +591,7 @@ async function generateTimeCard(data) {
   ctx.font =
     'bold 25px "Arial"';
 
-  ctx.fillStyle =
-    "#ff1744";
+  ctx.fillStyle = "#ff1744";
 
   ctx.fillText(
     "MOHAMMAD MARUF",
@@ -589,14 +612,11 @@ async function generateTimeCard(data) {
   );
 
   // ═════════════════════════════════════
-  // SAVE IMAGE
+  // SAVE
   // ═════════════════════════════════════
 
   const cacheDir =
-    path.join(
-      __dirname,
-      "cache"
-    );
+    path.join(__dirname, "cache");
 
   if (!fs.existsSync(cacheDir)) {
     fs.mkdirSync(
