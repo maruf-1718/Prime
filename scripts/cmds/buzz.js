@@ -6,7 +6,7 @@ module.exports = {
     version: "3.2.0",
     role: 2,
     author: "Akash Edit",
-    description: "১০০+ আকাশ ভাই স্টাইল ক্যাপশন পাঠায়",
+    description: "১০০+ মারুফ ভাই স্টাইল ক্যাপশন পাঠায়",
     category: "fun",
     usages: "@mention",
     cooldowns: 5,
