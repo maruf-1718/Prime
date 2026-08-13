@@ -158,7 +158,6 @@ f${fontNumber} Hello Maruf`
       await react("🔰");
 
       return message.reply(result);
-      );
 
     } catch (error) {
 
