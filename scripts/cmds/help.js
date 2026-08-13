@@ -9,8 +9,8 @@ module.exports = {
     version: "1.0.0",
     author: "Mohammad Maruf",
 
-    shortDescription: "VIP Command Menu",
-    longDescription: "Show all available commands in a premium VIP style menu.",
+    shortDescription: "Show all commands",
+    longDescription: "Show all available commands in a clean box style menu.",
 
     category: "system",
 
@@ -23,9 +23,9 @@ module.exports = {
 
     const allCommands = global.GoatBot.commands;
 
-    // ==========================================
-    // VIP BOLD FONT
-    // ==========================================
+    // ==============================
+    // Bold Font
+    // ==============================
 
     const fancyFont = (str) => {
 
@@ -51,9 +51,9 @@ module.exports = {
     };
 
 
-    // ==========================================
-    // MONO / CATEGORY FONT
-    // ==========================================
+    // ==============================
+    // Category Font
+    // ==============================
 
     const categoryFont = (str) => {
 
@@ -79,9 +79,9 @@ module.exports = {
     };
 
 
-    // ==========================================
-    // CATEGORY CLEAN
-    // ==========================================
+    // ==============================
+    // Category Name
+    // ==============================
 
     const cleanCategoryName = (text) => {
 
@@ -93,9 +93,9 @@ module.exports = {
     };
 
 
-    // ==========================================
-    // SPECIFIC COMMAND INFO
-    // ==========================================
+    // ==============================
+    // Specific Command Info
+    // ==============================
 
     if (args[0]) {
 
@@ -114,20 +114,18 @@ module.exports = {
       if (!cmd) {
 
         return message.reply(
-`╭━━━━━━━━━━━━━━━━━━━━━━╮
-┃
-┃      ❌ ${fancyFont("NOT FOUND")}
-┃
-┃  🔍 ${fancyFont("COMMAND")} : ${cmdName}
-┃
-┃  ⚠️ ${fancyFont("STATUS")} : Not Found
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━╯`
+`╭────────〔 ✦ 𝐍𝐎𝐓 𝐅𝐎𝐔𝐍𝐃 ✦ 〕────────╮
+│
+│  ❌ ${fancyFont("Command")}: ${cmdName}
+│  ⚠️ ${fancyFont("Status")}: Not Found
+│
+╰──────────────────────────────────────`
         );
       }
 
 
       const config = cmd.config || {};
+
 
       const aliases =
         Array.isArray(config.aliases)
@@ -149,56 +147,46 @@ module.exports = {
           : config.guide || `${prefix}${config.name}`;
 
 
-      const usage = String(guide)
-        .replace(/\{pn\}/g, `${prefix}${config.name}`);
+      const usage =
+        String(guide)
+          .replace(/\{pn\}/g, `${prefix}${config.name}`);
 
 
       const infoMsg =
-`╭━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-┃
-┃      👑 ${fancyFont("VIP COMMAND")}
-┃         ✦ ${fancyFont("INFORMATION")} ✦
-┃
-┣━━━━━━━━━━━━━━━━━━━━━━━━━━┫
-┃
-┃  👑 ${fancyFont("NAME")}
-┃  ➜ ${fancyFont(config.name || "Unknown")}
-┃
-┃  🔗 ${fancyFont("ALIASES")}
-┃  ➜ ${fancyFont(aliases)}
-┃
-┃  📂 ${fancyFont("CATEGORY")}
-┃  ➜ ${categoryFont(
-    (config.category || "Others").toUpperCase()
-  )}
-┃
-┃  🔢 ${fancyFont("VERSION")}
-┃  ➜ ${fancyFont(config.version || "1.0.0")}
-┃
-┃  👨‍💻 ${fancyFont("AUTHOR")}
-┃  ➜ ${fancyFont(config.author || "Unknown")}
-┃
-┃  📝 ${fancyFont("DESCRIPTION")}
-┃  ➜ ${description}
-┃
-┃  ⚡ ${fancyFont("USAGE")}
-┃  ➜ ${usage}
-┃
-┣━━━━━━━━━━━━━━━━━━━━━━━━━━┫
-┃
-┃  🎀 ${fancyFont("POWERED BY")}
-┃  ➜ ${fancyFont("Mohammad Maruf")} ❤️‍🩹
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
-
+`╭────────〔 ✦ 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 ✦ 〕────────╮
+│
+│  01 │ ✦ ${fancyFont("name")}
+│      └─ ${fancyFont(config.name || "Unknown")}
+│
+│  02 │ ✦ ${fancyFont("aliases")}
+│      └─ ${fancyFont(aliases)}
+│
+│  03 │ ✦ ${fancyFont("category")}
+│      └─ ${categoryFont(
+          (config.category || "Others").toUpperCase()
+        )}
+│
+│  04 │ ✦ ${fancyFont("version")}
+│      └─ ${fancyFont(config.version || "1.0.0")}
+│
+│  05 │ ✦ ${fancyFont("author")}
+│      └─ ${fancyFont(config.author || "Unknown")}
+│
+│  06 │ ✦ ${fancyFont("description")}
+│      └─ ${description}
+│
+│  07 │ ✦ ${fancyFont("usage")}
+│      └─ ${usage}
+│
+╰──────────────────────────────────────`;
 
       return message.reply(infoMsg);
     }
 
 
-    // ==========================================
-    // GROUP COMMANDS BY CATEGORY
-    // ==========================================
+    // ==============================
+    // Group Commands
+    // ==============================
 
     const categories = {};
 
@@ -218,9 +206,9 @@ module.exports = {
     }
 
 
-    // ==========================================
-    // COMMAND FORMAT
-    // ==========================================
+    // ==============================
+    // Format Commands
+    // ==============================
 
     const formatCommands = (commands) => {
 
@@ -228,40 +216,42 @@ module.exports = {
         .sort((a, b) =>
           String(a).localeCompare(String(b))
         )
-        .map(
-          (name, index) =>
-            `┃  ${String(index + 1).padStart(2, "0")} ┃ ✦ ${fancyFont(name)}`
-        )
+        .map((name, index) => {
+
+          const number =
+            String(index + 1).padStart(2, "0");
+
+          return `│  ${number} │ ✦ ${fancyFont(name)}`;
+
+        })
         .join("\n");
     };
 
 
-    // ==========================================
-    // VIP HEADER
-    // ==========================================
+    // ==============================
+    // Main Header
+    // ==============================
 
     let msg =
-`╭━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-┃
-┃      👑 ${fancyFont("MARUF VIP MENU")} 👑
-┃
-┃   ✦ ${fancyFont("PREMIUM COMMAND CENTER")} ✦
-┃
-┣━━━━━━━━━━━━━━━━━━━━━━━━━━┫
-┃
-┃  ⚡ ${fancyFont("PREFIX")}  : ${prefix}
-┃  📦 ${fancyFont("COMMANDS")}: ${allCommands.size}
-┃  🔢 ${fancyFont("VERSION")} : ${fancyFont("1.0.0")}
-┃  👨‍💻 ${fancyFont("OWNER")}   : ${fancyFont("Mohammad Maruf")}
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+`╭──────────〔 ✦ 𝐂𝐎𝐍𝐅𝐈𝐆 ✦ 〕──────────╮
+│
+│  01 │ ✦ ${fancyFont("prefix")}
+│      └─ ${prefix}
+│
+│  02 │ ✦ ${fancyFont("commands")}
+│      └─ ${allCommands.size}
+│
+│  03 │ ✦ ${fancyFont("version")}
+│      └─ ${fancyFont("1.0.0")}
+│
+╰────────────────────────────────────────
 
 `;
 
 
-    // ==========================================
-    // CATEGORY MENU
-    // ==========================================
+    // ==============================
+    // Categories
+    // ==============================
 
     const sortedCategories =
       Object.keys(categories).sort();
@@ -269,13 +259,11 @@ module.exports = {
 
     for (const category of sortedCategories) {
 
-      const categoryTitle =
-        category.toUpperCase();
-
-
       msg +=
-`╭━━━━━━〔 ✦ ${categoryFont(categoryTitle)} ✦ 〕━━━━━━╮
-┃
+`╭────────〔 ✦ ${categoryFont(
+        category.toUpperCase()
+      )} ✦ 〕────────╮
+│
 `;
 
 
@@ -287,39 +275,32 @@ module.exports = {
 
       msg +=
 `
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+│
+╰──────────────────────────────────────
 
 `;
     }
 
 
-    // ==========================================
-    // VIP FOOTER
-    // ==========================================
+    // ==============================
+    // Footer
+    // ==============================
 
     msg +=
-`╭━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-┃
-┃  💡 ${fancyFont("HOW TO USE")}
-┃  ➜ ${prefix}help <command>
-┃
-┃  ✦ ${fancyFont("Example")}
-┃  ➜ ${prefix}help font
-┃
-┣━━━━━━━━━━━━━━━━━━━━━━━━━━┫
-┃
-┃  👑 ${fancyFont("CREATED BY")}
-┃  ➜ ${fancyFont("Mohammad Maruf")}
-┃
-┃       ❤️‍🩹🎀 ${fancyFont("VIP BOT")} 🎀❤️‍🩹
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+`╭──────────〔 ✦ 𝐈𝐍𝐅𝐎 ✦ 〕──────────╮
+│
+│  01 │ ✦ ${fancyFont("use")}
+│      └─ ${prefix}help <command>
+│
+│  02 │ ✦ ${fancyFont("author")}
+│      └─ ${fancyFont("Mohammad Maruf")}
+│
+╰────────────────────────────────────`;
 
 
-    // ==========================================
-    // VIP IMAGE
-    // ==========================================
+    // ==============================
+    // Image
+    // ==============================
 
     const imageURLs = [
       "https://i.ibb.co/ynVJVbQ5/4a85abc3a112.jpg"
@@ -358,9 +339,9 @@ module.exports = {
       );
 
 
-    // ==========================================
-    // SEND MENU
-    // ==========================================
+    // ==============================
+    // Send
+    // ==============================
 
     try {
 
@@ -382,20 +363,19 @@ module.exports = {
     } catch (error) {
 
       console.error(
-        "VIP Help Image Error:",
+        "Help Image Error:",
         error
       );
 
-      // Image কাজ না করলেও menu পাঠাবে
       return message.reply(msg);
     }
   }
 };
 
 
-// ==========================================
-// IMAGE DOWNLOADER
-// ==========================================
+// ==============================
+// Image Downloader
+// ==============================
 
 function downloadImage(url, destination) {
 
@@ -412,9 +392,7 @@ function downloadImage(url, destination) {
         url,
         response => {
 
-          if (
-            response.statusCode !== 200
-          ) {
+          if (response.statusCode !== 200) {
 
             file.close();
 
@@ -441,6 +419,7 @@ function downloadImage(url, destination) {
               file.close(resolve);
             }
           );
+
         }
       ).on(
         "error",
