@@ -91,9 +91,9 @@ module.exports = {
     msg += `│  𝐔𝐒𝐄 : ${prefix}help <command>\n│`;
 
     const gifURLs = [
-      "https://i.imgur.com/Xw6JTfn.gif",
-      "https://i.imgur.com/mW0yjZb.gif",
-      "https://i.imgur.com/KQBcxOV.gif"
+      "https://i.ibb.co/ynVJVbQ5/4a85abc3a112.jpg",
+      "https://i.ibb.co/ynVJVbQ5/4a85abc3a112.jpg",
+      "https://i.ibb.co/ynVJVbQ5/4a85abc3a112.jpg"
     ];
     const randomGifURL = gifURLs[Math.floor(Math.random() * gifURLs.length)];
     const gifFolder = path.join(__dirname, "cache");
