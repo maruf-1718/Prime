@@ -110,13 +110,13 @@ module.exports = {
 
       if (!cmd) {
         return message.reply(
-`╭━━━━━━━━━━━━━━━━━╮
+`╭━━━━━━━━━━━━━━╮
 ┃
 ┃  ❌ ${fancyFont("COMMAND NOT FOUND")}
 ┃
 ┃  ${fancyFont("Command")} : ${cmdName}
 ┃
-╰━━━━━━━━━━━━━━━━━╯`
+╰━━━━━━━━━━━━━━━╯`
         );
       }
 
@@ -151,11 +151,11 @@ module.exports = {
 
 
       const infoMsg =
-`╭━━━━━━━━━━━━━━━━╮
+`╭━━━━━━━━━━━━━━━╮
 ┃
 ┃       👑  ${fancyFont("COMMAND INFO")} 👑
 ┃
-┣━━━━━━━━━━━━━━━━┫
+┣━━━━━━━━━━━━━━━┫
 ┃
 ┃  01 ┃ ✦ ${fancyFont("NAME")}
 ┃      └─ ${fancyFont(config.name || "Unknown")}
@@ -180,7 +180,7 @@ module.exports = {
 ┃  07 ┃ ✦ ${fancyFont("USAGE")}
 ┃      └─ ${usage}
 ┃
-╰━━━━━━━━━━━━━━━━╯`;
+╰━━━━━━━━━━━━━━━╯`;
 
       return message.reply(infoMsg);
     }
@@ -234,16 +234,16 @@ module.exports = {
     // ==========================================
 
     let msg =
-`╭━━━━━━━━━━━━━━━╮
+`╭━━━━━━━━━━━━━━╮
 ┃
 ┃         👑  ${fancyFont("HELP MENU")} 👑
 ┃
-┣━━━━━━━━━━━━━━━━┫
+┣━━━━━━━━━━━━━━━┫
 ┃
 ┃  ⚡ ${fancyFont("PREFIX")}  : ${prefix}
 ┃  📦 ${fancyFont("COMMANDS")}: ${allCommands.size}
 ┃
-╰━━━━━━━━━━━━━━━━╯
+╰━━━━━━━━━━━━━━━╯
 
 `;
 
@@ -265,7 +265,7 @@ module.exports = {
 
 
       msg +=
-`╭━━〔 ✦ ${title} ✦ 〕━━╮
+`╭━〔 ✦ ${title} ✦ 〕━╮
 ┃
 `;
 
@@ -279,7 +279,7 @@ module.exports = {
       msg +=
 `
 ┃
-╰━━━━━━━━━━━━━━━━━╯
+╰━━━━━━━━━━━━━━━━╯
 
 `;
     }
