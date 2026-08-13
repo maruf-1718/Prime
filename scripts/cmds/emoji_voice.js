@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "emoji_voice",
     version: "2.0.2",
-    author: "MOHAMMAD AKASH",
+    author: "Mohammad Maruf",
     countDown: 5,
     role: 0,
     shortDescription: "Sends a cute girl's voice when an emoji is used 😍",
@@ -65,7 +65,9 @@ longDescription: "One emoji triggers multiple voices, sent randomly 😘",
       "😒": ["https://files.catbox.moe/mt5il0.mp3"],
       "😓": ["https://files.catbox.moe/zh3mdg.mp3"],
       "🤧": ["https://files.catbox.moe/zh3mdg.mp3"],
-      "🙄": ["https://files.catbox.moe/vgzkeu.mp3"]
+      "🙄": ["https://files.catbox.moe/vgzkeu.mp3"],
+      "🤪":
+["https://files.catbox.moe/ihmbr7.mp3"]
 
     };
 
@@ -97,7 +99,7 @@ longDescription: "One emoji triggers multiple voices, sent randomly 😘",
       });
     } catch (error) {
       console.error(error);
-      message.reply("ইমোজি দিয়ে লাভ নাই 😒\nযাও মুড়ি খাও জান 😘");
+      message.reply("ইমোজি দিয়ে লাভ নাই 😒\nযাও ভালো মুন্সী দেখো গা জান 😘");
     }
   }
 };
