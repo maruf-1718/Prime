@@ -5,31 +5,31 @@ const path = require("path");
 const { execSync } = require("child_process");
 
 /* ═══════════════════════════════════════
-   ⚡ CYBERPUNK FONT
+   🎮 GAMING FONT
 ═══════════════════════════════════════ */
 
 const fontDir = path.join(__dirname, "fonts");
 
 try {
   registerFont(path.join(fontDir, "CourierPrime-Regular.ttf"), {
-    family: "Cyber"
+    family: "Gaming"
   });
 
   registerFont(path.join(fontDir, "CourierPrime-Bold.ttf"), {
-    family: "Cyber",
+    family: "Gaming",
     weight: "bold"
   });
 } catch (err) {
-  console.log("Cyber font loading warning:", err.message);
+  console.log("Font loading warning:", err.message);
 }
 
 /* ═══════════════════════════════════════
-   🖥️ SYSTEM FUNCTIONS
+   ⚙️ SYSTEM HELPERS
 ═══════════════════════════════════════ */
 
 let previousCPU = null;
 
-function getCPUUsage() {
+function getCPU() {
   let idle = 0;
   let total = 0;
 
@@ -37,6 +37,7 @@ function getCPUUsage() {
     for (const type in cpu.times) {
       total += cpu.times[type];
     }
+
     idle += cpu.times.idle;
   }
 
@@ -63,7 +64,7 @@ function getCPUUsage() {
   );
 }
 
-function getDiskUsage() {
+function getDisk() {
   try {
     const output = execSync("df -k /").toString();
     const line = output.split("\n")[1];
@@ -94,30 +95,30 @@ function getTemperature() {
     }
   } catch {}
 
-  return 42 + Math.floor(Math.random() * 10);
+  return 45;
 }
 
 function formatBytes(bytes) {
   const units = ["B", "KB", "MB", "GB", "TB"];
 
-  let i = 0;
   let value = bytes;
+  let index = 0;
 
-  while (value >= 1024 && i < units.length - 1) {
+  while (value >= 1024 && index < units.length - 1) {
     value /= 1024;
-    i++;
+    index++;
   }
 
-  return `${value.toFixed(1)} ${units[i]}`;
+  return `${value.toFixed(1)} ${units[index]}`;
 }
 
 function getUptime() {
-  const sec = process.uptime();
+  const seconds = process.uptime();
 
-  const d = Math.floor(sec / 86400);
-  const h = Math.floor((sec % 86400) / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.floor(sec % 60);
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
 
   return `${d}d ${h}h ${m}m ${s}s`;
 }
@@ -130,31 +131,60 @@ function getStatus(ping) {
 }
 
 /* ═══════════════════════════════════════
-   🎨 DRAW HELPERS
+   🎨 GRAPHICS HELPERS
 ═══════════════════════════════════════ */
 
-function roundedRect(ctx, x, y, w, h, r) {
+function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
+
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
   ctx.quadraticCurveTo(x + w, y, x + w, y + r);
   ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.quadraticCurveTo(
+    x + w,
+    y + h,
+    x + w - r,
+    y + h
+  );
+
   ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+
+  ctx.quadraticCurveTo(
+    x,
+    y + h,
+    x,
+    y + h - r
+  );
+
   ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
+
+  ctx.quadraticCurveTo(
+    x,
+    y,
+    x + r,
+    y
+  );
+
   ctx.closePath();
 }
 
-function drawGlowText(ctx, text, x, y, color, size, align = "left") {
+function glowText(
+  ctx,
+  text,
+  x,
+  y,
+  color,
+  size,
+  align = "left"
+) {
   ctx.save();
 
+  ctx.font = `bold ${size}px "Gaming"`;
   ctx.textAlign = align;
-  ctx.font = `bold ${size}px "Cyber"`;
 
   ctx.shadowColor = color;
-  ctx.shadowBlur = 18;
+  ctx.shadowBlur = 25;
 
   ctx.fillStyle = color;
   ctx.fillText(text, x, y);
@@ -164,110 +194,202 @@ function drawGlowText(ctx, text, x, y, color, size, align = "left") {
   ctx.restore();
 }
 
-function drawPanel(ctx, x, y, w, h, title) {
+function panel(
+  ctx,
+  x,
+  y,
+  w,
+  h,
+  title
+) {
   ctx.save();
 
-  // Shadow
-  ctx.shadowColor = "rgba(0,255,150,0.15)";
+  ctx.shadowColor =
+    "rgba(255,0,30,0.20)";
+
   ctx.shadowBlur = 25;
 
-  roundedRect(ctx, x, y, w, h, 20);
+  roundRect(
+    ctx,
+    x,
+    y,
+    w,
+    h,
+    18
+  );
 
-  const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+  ctx.fillStyle =
+    "rgba(4,4,5,0.98)";
 
-  gradient.addColorStop(0, "rgba(12,25,27,0.96)");
-  gradient.addColorStop(1, "rgba(5,12,18,0.96)");
-
-  ctx.fillStyle = gradient;
   ctx.fill();
 
   ctx.shadowBlur = 0;
 
-  ctx.strokeStyle = "rgba(0,255,140,0.35)";
+  ctx.strokeStyle =
+    "rgba(255,0,35,0.45)";
+
   ctx.lineWidth = 2;
+
   ctx.stroke();
 
-  // Top accent
-  ctx.strokeStyle = "#00ff88";
-  ctx.lineWidth = 3;
+  /* Red top accent */
+
+  ctx.strokeStyle = "#ff003c";
+  ctx.lineWidth = 4;
 
   ctx.beginPath();
-  ctx.moveTo(x + 20, y);
-  ctx.lineTo(x + 150, y);
-  ctx.stroke();
 
-  // Title
-  ctx.font = `bold 25px "Cyber"`;
-  ctx.fillStyle = "#00ff88";
-  ctx.textAlign = "left";
-  ctx.fillText(`◆ ${title}`, x + 25, y + 38);
-
-  ctx.restore();
-}
-
-function drawProgress(ctx, x, y, w, value, color) {
-  const h = 18;
-
-  roundedRect(ctx, x, y, w, h, 9);
-  ctx.fillStyle = "#061313";
-  ctx.fill();
-
-  const fillWidth = Math.max(5, (w * value) / 100);
-
-  roundedRect(ctx, x, y, fillWidth, h, 9);
-
-  const gradient = ctx.createLinearGradient(
-    x,
-    y,
-    x + fillWidth,
+  ctx.moveTo(
+    x + 20,
     y
   );
 
-  gradient.addColorStop(0, color);
-  gradient.addColorStop(1, "#ffffff");
+  ctx.lineTo(
+    x + 180,
+    y
+  );
 
-  ctx.fillStyle = gradient;
+  ctx.stroke();
+
+  /* Panel title */
+
+  ctx.font =
+    `bold 22px "Gaming"`;
+
+  ctx.fillStyle =
+    "#ff1744";
+
+  ctx.textAlign =
+    "left";
+
+  ctx.fillText(
+    `// ${title}`,
+    x + 25,
+    y + 36
+  );
+
+  ctx.restore();
+}
+
+function progressBar(
+  ctx,
+  x,
+  y,
+  width,
+  value
+) {
+  const height = 16;
+
+  /* Background */
+
+  roundRect(
+    ctx,
+    x,
+    y,
+    width,
+    height,
+    8
+  );
+
+  ctx.fillStyle =
+    "#120205";
+
   ctx.fill();
 
-  ctx.strokeStyle = "rgba(0,255,150,0.3)";
+  /* Progress */
+
+  const fill =
+    Math.max(
+      4,
+      width * value / 100
+    );
+
+  roundRect(
+    ctx,
+    x,
+    y,
+    fill,
+    height,
+    8
+  );
+
+  const gradient =
+    ctx.createLinearGradient(
+      x,
+      y,
+      x + fill,
+      y
+    );
+
+  gradient.addColorStop(
+    0,
+    "#70000f"
+  );
+
+  gradient.addColorStop(
+    0.5,
+    "#ff003c"
+  );
+
+  gradient.addColorStop(
+    1,
+    "#ff5577"
+  );
+
+  ctx.fillStyle =
+    gradient;
+
+  ctx.fill();
+
+  ctx.strokeStyle =
+    "rgba(255,0,50,0.35)";
+
   ctx.lineWidth = 1;
+
   ctx.stroke();
 }
 
-function drawMetric(ctx, x, y, label, value, color) {
-  ctx.font = `22px "Cyber"`;
-  ctx.textAlign = "left";
+function metric(
+  ctx,
+  x,
+  y,
+  label,
+  value
+) {
+  ctx.font =
+    `18px "Gaming"`;
 
-  ctx.fillStyle = "#6d8f8a";
-  ctx.fillText(label, x, y);
+  ctx.fillStyle =
+    "#77333e";
 
-  ctx.font = `bold 28px "Cyber"`;
-  ctx.fillStyle = color;
-  ctx.fillText(`${value}%`, x, y + 34);
+  ctx.textAlign =
+    "left";
 
-  drawProgress(
-    ctx,
-    x + 90,
-    y + 18,
-    250,
-    value,
-    color
+  ctx.fillText(
+    label,
+    x,
+    y
   );
-}
 
-function drawScanlines(ctx, W, H) {
-  ctx.save();
+  ctx.font =
+    `bold 28px "Gaming"`;
 
-  for (let y = 0; y < H; y += 6) {
-    ctx.fillStyle =
-      y % 12 === 0
-        ? "rgba(0,255,140,0.025)"
-        : "rgba(0,255,140,0.012)";
+  ctx.fillStyle =
+    "#ff1744";
 
-    ctx.fillRect(0, y, W, 2);
-  }
+  ctx.fillText(
+    `${value}%`,
+    x,
+    y + 32
+  );
 
-  ctx.restore();
+  progressBar(
+    ctx,
+    x + 85,
+    y + 10,
+    300,
+    value
+  );
 }
 
 /* ═══════════════════════════════════════
@@ -275,518 +397,665 @@ function drawScanlines(ctx, W, H) {
 ═══════════════════════════════════════ */
 
 module.exports = {
+
   config: {
     name: "up",
-    aliases: ["uptime", "status", "sysinfo"],
-    version: "3.0.0",
+    aliases: [
+      "uptime",
+      "status",
+      "sysinfo"
+    ],
+    version: "3.1.0",
     author: "Mohammad Maruf",
     role: 0,
     category: "system",
 
     shortDescription:
-      "Premium Cyberpunk System Dashboard",
+      "Gaming style system dashboard",
 
     longDescription:
-      "Displays real-time bot uptime, CPU, RAM, storage, system and response information in a futuristic cyberpunk dashboard.",
+      "Premium AMOLED gaming dashboard with real-time system information.",
 
     guide: "{pn}"
   },
 
-  onStart: async function ({ message, api, event }) {
+  onStart: async function ({
+    message,
+    api,
+    event
+  }) {
+
     try {
-      const start = Date.now();
 
-      /* ═══════════════════════════════
+      const start =
+        Date.now();
+
+      /* ═══════════════════════
          SYSTEM DATA
-      ═══════════════════════════════ */
+      ═══════════════════════ */
 
-      const cpu = Math.min(getCPUUsage(), 100);
+      const cpu =
+        getCPU();
 
-      const totalRAM = os.totalmem();
-      const freeRAM = os.freemem();
-      const usedRAM = totalRAM - freeRAM;
+      const totalRAM =
+        os.totalmem();
 
-      const ram = Math.min(
-        100,
-        Math.round((usedRAM / totalRAM) * 100)
-      );
+      const freeRAM =
+        os.freemem();
 
-      const disk = getDiskUsage();
+      const usedRAM =
+        totalRAM - freeRAM;
 
-      const temp = getTemperature();
+      const ram =
+        Math.min(
+          100,
+          Math.round(
+            usedRAM /
+            totalRAM *
+            100
+          )
+        );
 
-      const cores = os.cpus().length;
+      const disk =
+        getDisk();
+
+      const temperature =
+        getTemperature();
+
+      const cores =
+        os.cpus().length;
 
       const platform =
         `${os.platform().toUpperCase()} ${os.arch()}`;
 
-      const nodeVersion = process.version;
+      const node =
+        process.version;
 
-      const hostname = os.hostname();
+      const hostname =
+        os.hostname();
 
-      const uptime = getUptime();
+      const load =
+        os.loadavg()[0]
+          .toFixed(2);
 
-      const ping = Math.min(
-        Date.now() - start,
-        9999
-      );
+      const uptime =
+        getUptime();
 
-      const status = getStatus(ping);
+      const ping =
+        Math.min(
+          Date.now() - start,
+          9999
+        );
 
-      const load = os.loadavg()[0].toFixed(2);
+      const status =
+        getStatus(ping);
 
-      const totalMemoryText = formatBytes(totalRAM);
-      const usedMemoryText = formatBytes(usedRAM);
+      const usedMemory =
+        formatBytes(usedRAM);
 
-      const now = new Date();
+      const totalMemory =
+        formatBytes(totalRAM);
 
-      const time = now.toLocaleTimeString(
-        "en-US",
-        {
-          hour12: false,
-          timeZone: "Asia/Dhaka"
-        }
-      );
+      const now =
+        new Date();
 
-      const date = now.toLocaleDateString(
-        "en-GB",
-        {
-          timeZone: "Asia/Dhaka"
-        }
-      );
+      const time =
+        now.toLocaleTimeString(
+          "en-US",
+          {
+            hour12: false,
+            timeZone:
+              "Asia/Dhaka"
+          }
+        );
 
-      /* ═══════════════════════════════
+      const date =
+        now.toLocaleDateString(
+          "en-GB",
+          {
+            timeZone:
+              "Asia/Dhaka"
+          }
+        );
+
+      /* ═══════════════════════
          CANVAS
-      ═══════════════════════════════ */
+      ═══════════════════════ */
 
       const W = 1800;
       const H = 1200;
 
-      const canvas = createCanvas(W, H);
-      const ctx = canvas.getContext("2d");
+      const canvas =
+        createCanvas(W, H);
 
-      /* BACKGROUND */
+      const ctx =
+        canvas.getContext("2d");
 
-      const bg = ctx.createLinearGradient(
+      /* PURE AMOLED BLACK */
+
+      ctx.fillStyle =
+        "#000000";
+
+      ctx.fillRect(
         0,
         0,
         W,
         H
       );
 
-      bg.addColorStop(0, "#020708");
-      bg.addColorStop(0.5, "#061313");
-      bg.addColorStop(1, "#020607");
-
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, W, H);
-
-      /* GRID */
+      /* ═══════════════════════
+         GAMING GRID
+      ═══════════════════════ */
 
       ctx.save();
 
-      ctx.strokeStyle = "rgba(0,255,130,0.045)";
+      ctx.strokeStyle =
+        "rgba(255,0,40,0.035)";
+
       ctx.lineWidth = 1;
 
-      for (let x = 0; x < W; x += 50) {
+      for (
+        let x = 0;
+        x < W;
+        x += 45
+      ) {
+
         ctx.beginPath();
+
         ctx.moveTo(x, 0);
         ctx.lineTo(x, H);
+
         ctx.stroke();
       }
 
-      for (let y = 0; y < H; y += 50) {
+      for (
+        let y = 0;
+        y < H;
+        y += 45
+      ) {
+
         ctx.beginPath();
+
         ctx.moveTo(0, y);
         ctx.lineTo(W, y);
+
         ctx.stroke();
       }
 
       ctx.restore();
 
-      drawScanlines(ctx, W, H);
+      /* ═══════════════════════
+         TOP CORNERS
+      ═══════════════════════ */
 
-      /* ═══════════════════════════════
-         TOP HEADER
-      ═══════════════════════════════ */
+      ctx.fillStyle =
+        "#ff003c";
 
-      drawGlowText(
-        ctx,
-        "SYSTEM // ONLINE",
-        90,
-        95,
-        "#00ff88",
-        30
+      ctx.fillRect(
+        60,
+        55,
+        8,
+        100
       );
 
-      ctx.font = `20px "Cyber"`;
-      ctx.fillStyle = "#46736d";
-      ctx.textAlign = "right";
-
-      ctx.fillText(
-        `${date}  //  ${time}`,
-        W - 90,
-        95
+      ctx.fillRect(
+        60,
+        55,
+        120,
+        8
       );
 
-      drawGlowText(
+      ctx.fillRect(
+        W - 68,
+        55,
+        8,
+        100
+      );
+
+      ctx.fillRect(
+        W - 180,
+        55,
+        120,
+        8
+      );
+
+      /* ═══════════════════════
+         BIG NAME
+      ═══════════════════════ */
+
+      glowText(
         ctx,
-        "N E X U S",
+        "MOHAMMAD MARUF",
         W / 2,
-        170,
-        "#00ffff",
-        78,
+        125,
+        "#ff003c",
+        82,
         "center"
       );
 
-      ctx.font = `22px "Cyber"`;
-      ctx.fillStyle = "#578f88";
-      ctx.textAlign = "center";
+      ctx.font =
+        `bold 22px "Gaming"`;
+
+      ctx.fillStyle =
+        "#8f152a";
+
+      ctx.textAlign =
+        "center";
 
       ctx.fillText(
-        "ADVANCED BOT MONITORING INTERFACE",
+        "◢  MARUF GAMING CORE  ◣",
         W / 2,
-        215
+        165
       );
 
-      /* ═══════════════════════════════
-         STATUS BAR
-      ═══════════════════════════════ */
+      /* ═══════════════════════
+         TOP STATUS
+      ═══════════════════════ */
 
-      roundedRect(
+      roundRect(
         ctx,
         80,
-        250,
+        205,
         W - 160,
-        60,
-        15
+        58,
+        14
       );
 
-      ctx.fillStyle = "rgba(0,255,130,0.05)";
+      ctx.fillStyle =
+        "#050000";
+
       ctx.fill();
 
-      ctx.strokeStyle = "rgba(0,255,130,0.25)";
+      ctx.strokeStyle =
+        "rgba(255,0,45,0.35)";
+
       ctx.stroke();
 
-      ctx.textAlign = "left";
-      ctx.font = `20px "Cyber"`;
+      ctx.font =
+        `bold 18px "Gaming"`;
 
-      ctx.fillStyle = "#00ff88";
+      ctx.textAlign =
+        "left";
+
+      ctx.fillStyle =
+        "#ff1744";
+
       ctx.fillText(
-        "● CONNECTION ESTABLISHED",
+        "● SYSTEM ONLINE",
         110,
-        288
+        241
       );
 
-      ctx.fillStyle = "#456b65";
-      ctx.textAlign = "center";
+      ctx.textAlign =
+        "center";
+
+      ctx.fillStyle =
+        "#702431";
 
       ctx.fillText(
-        `HOST: ${hostname.substring(0, 25)}`,
+        `HOST // ${hostname.substring(0, 25)}`,
         W / 2,
-        288
+        241
       );
 
-      ctx.textAlign = "right";
-      ctx.fillStyle = "#00ffff";
+      ctx.textAlign =
+        "right";
+
+      ctx.fillStyle =
+        "#ff1744";
 
       ctx.fillText(
-        `PING: ${ping}ms`,
+        `${date} // ${time}`,
         W - 110,
-        288
+        241
       );
 
-      /* ═══════════════════════════════
-         LEFT SYSTEM PANEL
-      ═══════════════════════════════ */
+      /* ═══════════════════════
+         CORE PANEL
+      ═══════════════════════ */
 
-      drawPanel(
+      panel(
         ctx,
         80,
-        350,
-        790,
-        350,
+        300,
+        800,
+        360,
         "SYSTEM CORE"
       );
 
-      const leftX = 115;
-
-      const systemRows = [
+      const systemInfo = [
         ["PLATFORM", platform],
         ["PROCESSOR", `${cores} CORES`],
-        ["NODE.JS", nodeVersion],
+        ["NODE.JS", node],
         ["CPU LOAD", `${load}%`],
-        ["TEMPERATURE", `${temp}°C`],
-        ["HOST", hostname.substring(0, 28)]
+        ["TEMPERATURE", `${temperature}°C`],
+        ["HOSTNAME", hostname.substring(0, 25)]
       ];
 
-      systemRows.forEach((row, index) => {
-        const y = 425 + index * 43;
+      systemInfo.forEach(
+        (item, index) => {
 
-        ctx.font = `18px "Cyber"`;
-        ctx.textAlign = "left";
+          const y =
+            375 +
+            index * 45;
 
-        ctx.fillStyle = "#52746f";
-        ctx.fillText(row[0], leftX, y);
+          ctx.font =
+            `17px "Gaming"`;
 
-        ctx.font = `bold 20px "Cyber"`;
-        ctx.fillStyle = "#d4fff5";
+          ctx.fillStyle =
+            "#702431";
 
-        ctx.fillText(
-          row[1],
-          leftX + 220,
-          y
-        );
+          ctx.textAlign =
+            "left";
 
-        ctx.strokeStyle =
-          "rgba(0,255,140,0.08)";
+          ctx.fillText(
+            item[0],
+            120,
+            y
+          );
 
-        ctx.beginPath();
+          ctx.font =
+            `bold 20px "Gaming"`;
 
-        ctx.moveTo(
-          leftX,
-          y + 12
-        );
+          ctx.fillStyle =
+            "#eeeeee";
 
-        ctx.lineTo(
-          820,
-          y + 12
-        );
+          ctx.fillText(
+            item[1],
+            320,
+            y
+          );
 
-        ctx.stroke();
-      });
+          ctx.strokeStyle =
+            "rgba(255,0,40,0.08)";
 
-      /* ═══════════════════════════════
-         RIGHT METRICS PANEL
-      ═══════════════════════════════ */
+          ctx.beginPath();
 
-      drawPanel(
-        ctx,
-        910,
-        350,
-        810,
-        350,
-        "LIVE METRICS"
+          ctx.moveTo(
+            120,
+            y + 12
+          );
+
+          ctx.lineTo(
+            840,
+            y + 12
+          );
+
+          ctx.stroke();
+        }
       );
 
-      drawMetric(
+      /* ═══════════════════════
+         LIVE METRICS
+      ═══════════════════════ */
+
+      panel(
         ctx,
-        950,
-        430,
+        920,
+        300,
+        800,
+        360,
+        "LIVE PERFORMANCE"
+      );
+
+      metric(
+        ctx,
+        960,
+        385,
         "CPU",
-        cpu,
-        "#00ff88"
+        cpu
       );
 
-      drawMetric(
+      metric(
         ctx,
-        950,
-        515,
+        960,
+        470,
         "MEMORY",
-        ram,
-        "#00d9ff"
+        ram
       );
 
-      drawMetric(
+      metric(
         ctx,
-        950,
-        600,
+        960,
+        555,
         "STORAGE",
-        disk,
-        "#c66cff"
+        disk
       );
 
-      ctx.font = `17px "Cyber"`;
-      ctx.fillStyle = "#52746f";
-      ctx.textAlign = "left";
+      ctx.font =
+        `17px "Gaming"`;
+
+      ctx.fillStyle =
+        "#6d303b";
 
       ctx.fillText(
-        `RAM: ${usedMemoryText} / ${totalMemoryText}`,
-        950,
-        670
+        `RAM ${usedMemory} / ${totalMemory}`,
+        960,
+        630
       );
 
-      /* ═══════════════════════════════
-         BOT UPTIME PANEL
-      ═══════════════════════════════ */
+      /* ═══════════════════════
+         BOT STATUS
+      ═══════════════════════ */
 
-      drawPanel(
+      panel(
         ctx,
         80,
-        740,
+        700,
         1640,
         180,
-        "BOT RUNTIME"
+        "BOT PERFORMANCE"
       );
 
-      ctx.font = `22px "Cyber"`;
-      ctx.fillStyle = "#52746f";
-      ctx.textAlign = "left";
+      ctx.font =
+        `17px "Gaming"`;
+
+      ctx.fillStyle =
+        "#6d303b";
+
+      ctx.textAlign =
+        "left";
 
       ctx.fillText(
-        "UPTIME",
-        120,
-        805
+        "BOT UPTIME",
+        125,
+        755
       );
 
-      drawGlowText(
+      glowText(
         ctx,
         uptime,
-        120,
-        855,
-        "#00ffff",
-        48
+        125,
+        815,
+        "#ff1744",
+        42
       );
 
-      ctx.font = `22px "Cyber"`;
-      ctx.fillStyle = "#52746f";
+      ctx.fillStyle =
+        "#6d303b";
+
+      ctx.font =
+        `17px "Gaming"`;
 
       ctx.fillText(
         "RESPONSE",
-        720,
-        805
+        650,
+        755
       );
 
-      drawGlowText(
+      glowText(
         ctx,
         `${ping} ms`,
-        720,
-        855,
-        ping < 250 ? "#00ff88" : "#ffaa00",
-        48
+        650,
+        815,
+        "#ff1744",
+        42
       );
 
-      ctx.fillStyle = "#52746f";
-      ctx.font = `22px "Cyber"`;
+      ctx.fillStyle =
+        "#6d303b";
+
+      ctx.font =
+        `17px "Gaming"`;
 
       ctx.fillText(
         "STATUS",
-        1200,
-        805
+        1160,
+        755
       );
 
-      drawGlowText(
+      glowText(
         ctx,
         status,
-        1200,
-        855,
-        ping < 250 ? "#00ff88" : "#ffaa00",
-        40
+        1160,
+        815,
+        ping < 250
+          ? "#ff1744"
+          : "#ff8800",
+        38
       );
 
-      /* ═══════════════════════════════
-         MEMORY DETAIL
-      ═══════════════════════════════ */
+      /* ═══════════════════════
+         GAMING DIAGNOSTICS
+      ═══════════════════════ */
 
-      drawPanel(
+      panel(
         ctx,
         80,
-        950,
+        920,
         1640,
-        150,
+        155,
         "DIAGNOSTICS"
       );
 
-      ctx.font = `20px "Cyber"`;
-      ctx.textAlign = "left";
-
       const diagnostics = [
-        `PROCESS: ${process.pid}`,
-        `THREADS: ${cores}`,
-        `LOAD: ${load}`,
-        `NODE: ${nodeVersion}`,
-        `ARCH: ${os.arch()}`
+        ["PID", process.pid],
+        ["CORES", cores],
+        ["LOAD", load],
+        ["ARCH", os.arch()],
+        ["NODE", node]
       ];
 
-      diagnostics.forEach((text, i) => {
-        const x = 120 + i * 315;
+      diagnostics.forEach(
+        (item, index) => {
 
-        ctx.fillStyle = "#496e68";
-        ctx.fillText(
-          text.split(":")[0],
-          x,
-          1010
-        );
+          const x =
+            125 +
+            index * 315;
 
-        ctx.font = `bold 22px "Cyber"`;
-        ctx.fillStyle = "#b9fff0";
+          ctx.font =
+            `16px "Gaming"`;
 
-        ctx.fillText(
-          text.substring(text.indexOf(":") + 1).trim(),
-          x,
-          1045
-        );
+          ctx.fillStyle =
+            "#702431";
 
-        ctx.font = `20px "Cyber"`;
-      });
+          ctx.fillText(
+            item[0],
+            x,
+            975
+          );
 
-      /* ═══════════════════════════════
-         FOOTER
-      ═══════════════════════════════ */
+          ctx.font =
+            `bold 21px "Gaming"`;
 
-      ctx.textAlign = "center";
+          ctx.fillStyle =
+            "#eeeeee";
 
-      ctx.font = `18px "Cyber"`;
-      ctx.fillStyle = "#315b54";
-
-      ctx.fillText(
-        "NEXUS MONITORING CORE  •  SECURE SESSION  •  ALL SYSTEMS NOMINAL",
-        W / 2,
-        1145
+          ctx.fillText(
+            String(item[1]),
+            x,
+            1015
+          );
+        }
       );
 
-      /* ═══════════════════════════════
-         SAVE IMAGE
-      ═══════════════════════════════ */
+      /* ═══════════════════════
+         FOOTER
+      ═══════════════════════ */
+
+      ctx.textAlign =
+        "center";
+
+      ctx.font =
+        `bold 19px "Gaming"`;
+
+      ctx.fillStyle =
+        "#7a2031";
+
+      ctx.fillText(
+        "⚡ MARUF CORE // GAMING SYSTEM // ALL SYSTEMS OPERATIONAL ⚡",
+        W / 2,
+        1135
+      );
+
+      /* ═══════════════════════
+         SAVE
+      ═══════════════════════ */
 
       const cacheDir =
-        path.join(__dirname, "cache");
+        path.join(
+          __dirname,
+          "cache"
+        );
 
       fs.mkdirSync(
         cacheDir,
-        { recursive: true }
+        {
+          recursive: true
+        }
       );
 
-      const filePath = path.join(
-        cacheDir,
-        `nexus_${Date.now()}.png`
-      );
-
-      const buffer =
-        canvas.toBuffer("image/png");
+      const filePath =
+        path.join(
+          cacheDir,
+          `maruf_up_${Date.now()}.png`
+        );
 
       fs.writeFileSync(
         filePath,
-        buffer
+        canvas.toBuffer("image/png")
       );
 
-      /* ═══════════════════════════════
+      /* ═══════════════════════
          SEND
-      ═══════════════════════════════ */
+      ═══════════════════════ */
 
       await message.reply({
         attachment:
-          fs.createReadStream(filePath)
+          fs.createReadStream(
+            filePath
+          )
       });
 
-      /* CLEANUP */
+      /* CLEAN CACHE */
 
       setTimeout(() => {
+
         try {
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+
+          if (
+            fs.existsSync(
+              filePath
+            )
+          ) {
+            fs.unlinkSync(
+              filePath
+            );
           }
+
         } catch {}
+
       }, 15000);
 
     } catch (error) {
+
       console.error(
-        "NEXUS SYSTEM ERROR:",
+        "MARUF UP ERROR:",
         error
       );
 
       return message.reply(
-        "❌ System dashboard generate করা সম্ভব হয়নি।"
+        "❌ Gaming system dashboard তৈরি করা যায়নি।"
       );
     }
   },
@@ -795,18 +1064,25 @@ module.exports = {
      HACK TRIGGER
   ═══════════════════════════════ */
 
-  onChat: async function ({ event, api }) {
+  onChat: async function ({
+    event,
+    api
+  }) {
+
     if (
       event.body &&
-      event.body.trim().toLowerCase() === "hack"
+      event.body
+        .trim()
+        .toLowerCase() === "hack"
     ) {
+
       return api.sendMessage(
-        "╭───〔 SYSTEM 〕───╮\n" +
+        "╭──────〔 ⚠ SECURITY 〕──────╮\n" +
         "│\n" +
-        "│  ACCESS DENIED\n" +
-        "│  INSUFFICIENT PRIVILEGES\n" +
+        "│   ACCESS DENIED\n" +
+        "│   INSUFFICIENT PRIVILEGES\n" +
         "│\n" +
-        "╰─────────────────╯",
+        "╰────────────────────────────╯",
         event.threadID
       );
     }
