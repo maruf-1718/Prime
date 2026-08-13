@@ -10,7 +10,7 @@ module.exports = {
     author: "Mohammad Maruf",
 
     shortDescription: "Show all commands",
-    longDescription: "Show all available commands in a clean box style menu.",
+    longDescription: "Show all available commands in stylish category boxes.",
 
     category: "system",
 
@@ -23,12 +23,11 @@ module.exports = {
 
     const allCommands = global.GoatBot.commands;
 
-    // ==============================
-    // Bold Font
-    // ==============================
+    // ==========================================
+    // MAIN FONT
+    // ==========================================
 
     const fancyFont = (str) => {
-
       const map = {
         A:"𝐀", B:"𝐁", C:"𝐂", D:"𝐃", E:"𝐄",
         F:"𝐅", G:"𝐆", H:"𝐇", I:"𝐈", J:"𝐉",
@@ -51,12 +50,11 @@ module.exports = {
     };
 
 
-    // ==============================
-    // Category Font
-    // ==============================
+    // ==========================================
+    // CATEGORY FONT
+    // ==========================================
 
     const categoryFont = (str) => {
-
       const map = {
         A:"𝙰", B:"𝙱", C:"𝙲", D:"𝙳", E:"𝙴",
         F:"𝙵", G:"𝙶", H:"𝙷", I:"𝙸", J:"𝙹",
@@ -79,12 +77,11 @@ module.exports = {
     };
 
 
-    // ==============================
-    // Category Name
-    // ==============================
+    // ==========================================
+    // CATEGORY NAME
+    // ==========================================
 
     const cleanCategoryName = (text) => {
-
       if (!text) return "others";
 
       return String(text)
@@ -93,9 +90,9 @@ module.exports = {
     };
 
 
-    // ==============================
-    // Specific Command Info
-    // ==============================
+    // ==========================================
+    // SPECIFIC COMMAND INFO
+    // ==========================================
 
     if (args[0]) {
 
@@ -112,20 +109,19 @@ module.exports = {
 
 
       if (!cmd) {
-
         return message.reply(
-`╭────────〔 ✦ 𝐍𝐎𝐓 𝐅𝐎𝐔𝐍𝐃 ✦ 〕────────╮
-│
-│  ❌ ${fancyFont("Command")}: ${cmdName}
-│  ⚠️ ${fancyFont("Status")}: Not Found
-│
-╰──────────────────────────────────────`
+`╭━━━━━━━━━━━━━━━━━╮
+┃
+┃  ❌ ${fancyFont("COMMAND NOT FOUND")}
+┃
+┃  ${fancyFont("Command")} : ${cmdName}
+┃
+╰━━━━━━━━━━━━━━━━━╯`
         );
       }
 
 
       const config = cmd.config || {};
-
 
       const aliases =
         Array.isArray(config.aliases)
@@ -148,48 +144,53 @@ module.exports = {
 
 
       const usage =
-        String(guide)
-          .replace(/\{pn\}/g, `${prefix}${config.name}`);
+        String(guide).replace(
+          /\{pn\}/g,
+          `${prefix}${config.name}`
+        );
 
 
       const infoMsg =
-`╭────────〔 ✦ 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 ✦ 〕────────╮
-│
-│  01 │ ✦ ${fancyFont("name")}
-│      └─ ${fancyFont(config.name || "Unknown")}
-│
-│  02 │ ✦ ${fancyFont("aliases")}
-│      └─ ${fancyFont(aliases)}
-│
-│  03 │ ✦ ${fancyFont("category")}
-│      └─ ${categoryFont(
-          (config.category || "Others").toUpperCase()
-        )}
-│
-│  04 │ ✦ ${fancyFont("version")}
-│      └─ ${fancyFont(config.version || "1.0.0")}
-│
-│  05 │ ✦ ${fancyFont("author")}
-│      └─ ${fancyFont(config.author || "Unknown")}
-│
-│  06 │ ✦ ${fancyFont("description")}
-│      └─ ${description}
-│
-│  07 │ ✦ ${fancyFont("usage")}
-│      └─ ${usage}
-│
-╰──────────────────────────────────────`;
+`╭━━━━━━━━━━━━━━━━━╮
+┃
+┃       👑  ${fancyFont("COMMAND INFO")} 👑
+┃
+┣━━━━━━━━━━━━━━━━━┫
+┃
+┃  01 ┃ ✦ ${fancyFont("NAME")}
+┃      └─ ${fancyFont(config.name || "Unknown")}
+┃
+┃  02 ┃ ✦ ${fancyFont("ALIASES")}
+┃      └─ ${fancyFont(aliases)}
+┃
+┃  03 ┃ ✦ ${fancyFont("CATEGORY")}
+┃      └─ ${categoryFont(
+        (config.category || "Others").toUpperCase()
+      )}
+┃
+┃  04 ┃ ✦ ${fancyFont("VERSION")}
+┃      └─ ${fancyFont(config.version || "1.0.0")}
+┃
+┃  05 ┃ ✦ ${fancyFont("AUTHOR")}
+┃      └─ ${fancyFont(config.author || "Unknown")}
+┃
+┃  06 ┃ ✦ ${fancyFont("DESCRIPTION")}
+┃      └─ ${description}
+┃
+┃  07 ┃ ✦ ${fancyFont("USAGE")}
+┃      └─ ${usage}
+┃
+╰━━━━━━━━━━━━━━━━━╯`;
 
       return message.reply(infoMsg);
     }
 
 
-    // ==============================
-    // Group Commands
-    // ==============================
+    // ==========================================
+    // GROUP COMMANDS BY CATEGORY
+    // ==========================================
 
     const categories = {};
-
 
     for (const [name, cmd] of allCommands) {
 
@@ -206,9 +207,9 @@ module.exports = {
     }
 
 
-    // ==============================
-    // Format Commands
-    // ==============================
+    // ==========================================
+    // COMMAND FORMAT
+    // ==========================================
 
     const formatCommands = (commands) => {
 
@@ -221,37 +222,35 @@ module.exports = {
           const number =
             String(index + 1).padStart(2, "0");
 
-          return `│  ${number} │ ✦ ${fancyFont(name)}`;
+          return `┃  ${number} ┃ ✦ ${fancyFont(name)}`;
 
         })
         .join("\n");
     };
 
 
-    // ==============================
-    // Main Header
-    // ==============================
+    // ==========================================
+    // HEADER — EXACT STYLE
+    // ==========================================
 
     let msg =
-`╭──────────〔 ✦ 𝐂𝐎𝐍𝐅𝐈𝐆 ✦ 〕──────────╮
-│
-│  01 │ ✦ ${fancyFont("prefix")}
-│      └─ ${prefix}
-│
-│  02 │ ✦ ${fancyFont("commands")}
-│      └─ ${allCommands.size}
-│
-│  03 │ ✦ ${fancyFont("version")}
-│      └─ ${fancyFont("1.0.0")}
-│
-╰────────────────────────────────────────
+`╭━━━━━━━━━━━━━━━━━╮
+┃
+┃         👑  ${fancyFont("HELP MENU")} 👑
+┃
+┣━━━━━━━━━━━━━━━━━┫
+┃
+┃  ⚡ ${fancyFont("PREFIX")}  : ${prefix}
+┃  📦 ${fancyFont("COMMANDS")}: ${allCommands.size}
+┃
+╰━━━━━━━━━━━━━━━━━╯
 
 `;
 
 
-    // ==============================
-    // Categories
-    // ==============================
+    // ==========================================
+    // CATEGORY BOXES
+    // ==========================================
 
     const sortedCategories =
       Object.keys(categories).sort();
@@ -259,11 +258,15 @@ module.exports = {
 
     for (const category of sortedCategories) {
 
+      const title =
+        categoryFont(
+          category.toUpperCase()
+        );
+
+
       msg +=
-`╭────────〔 ✦ ${categoryFont(
-        category.toUpperCase()
-      )} ✦ 〕────────╮
-│
+`╭━━━━〔 ✦ ${title} ✦ 〕━━━━╮
+┃
 `;
 
 
@@ -275,37 +278,41 @@ module.exports = {
 
       msg +=
 `
-│
-╰──────────────────────────────────────
+┃
+╰━━━━━━━━━━━━━━━━━╯
 
 `;
     }
 
 
-    // ==============================
-    // Footer
-    // ==============================
+    // ==========================================
+    // FOOTER
+    // ==========================================
 
     msg +=
-`╭──────────〔 ✦ 𝐈𝐍𝐅𝐎 ✦ 〕──────────╮
-│
-│  01 │ ✦ ${fancyFont("use")}
-│      └─ ${prefix}help <command>
-│
-│  02 │ ✦ ${fancyFont("author")}
-│      └─ ${fancyFont("Mohammad Maruf")}
-│
-╰────────────────────────────────────`;
+`╭━━━━━━━━━━━━━━━━╮
+┃
+┃  💡 ${fancyFont("HOW TO USE")}
+┃  ➜ ${prefix}help <command>
+┃
+┃  ✦ ${fancyFont("Example")}
+┃  ➜ ${prefix}help font
+┃
+┣━━━━━━━━━━━━━━━━┫
+┃
+┃       👑  ${fancyFont("CREATED BY")}
+┃    ➜ ${fancyFont("Mohammad Maruf")}
+┃
+╰━━━━━━━━━━━━━━━━╯`;
 
 
-    // ==============================
-    // Image
-    // ==============================
+    // ==========================================
+    // IMAGE
+    // ==========================================
 
     const imageURLs = [
       "https://i.ibb.co/ynVJVbQ5/4a85abc3a112.jpg"
     ];
-
 
     const randomImageURL =
       imageURLs[
@@ -320,7 +327,6 @@ module.exports = {
 
 
     if (!fs.existsSync(cacheFolder)) {
-
       fs.mkdirSync(
         cacheFolder,
         { recursive: true }
@@ -339,14 +345,13 @@ module.exports = {
       );
 
 
-    // ==============================
-    // Send
-    // ==============================
+    // ==========================================
+    // SEND MENU
+    // ==========================================
 
     try {
 
       if (!fs.existsSync(imagePath)) {
-
         await downloadImage(
           randomImageURL,
           imagePath
@@ -373,9 +378,9 @@ module.exports = {
 };
 
 
-// ==============================
-// Image Downloader
-// ==============================
+// ==========================================
+// IMAGE DOWNLOADER
+// ==========================================
 
 function downloadImage(url, destination) {
 
@@ -415,7 +420,6 @@ function downloadImage(url, destination) {
           file.on(
             "finish",
             () => {
-
               file.close(resolve);
             }
           );
