@@ -67,7 +67,27 @@ longDescription: "One emoji triggers multiple voices, sent randomly 😘",
       "🤧": ["https://files.catbox.moe/zh3mdg.mp3"],
       "🙄": ["https://files.catbox.moe/vgzkeu.mp3"],
       "🤪":
-["https://files.catbox.moe/ihmbr7.mp3"]
+["https://files.catbox.moe/ihmbr7.mp3"],
+      "1️⃣":
+["https://files.catbox.moe/etsdn9.mp3"],
+      "2️⃣":
+["https://files.catbox.moe/ayepdz.mp3"],
+      "3️⃣":
+["https://files.catbox.moe/oaecnx.mp3"],
+      "4️⃣":
+["https://files.catbox.moe/xtpf61.mp3"],
+      "5️⃣":
+["https://files.catbox.moe/12grz0.mp3"],
+      "6️⃣":
+["https://files.catbox.moe/aaqddo.mp3"],
+      "7️⃣":
+["https://files.catbox.moe/k3acvx.mp3"],
+      "8️⃣":
+["মুড়ি খাও 😏"],
+      "9️⃣":
+[""],
+      "🔟":
+[""]
 
     };
 
@@ -99,7 +119,7 @@ longDescription: "One emoji triggers multiple voices, sent randomly 😘",
       });
     } catch (error) {
       console.error(error);
-      message.reply("ইমোজি দিয়ে লাভ নাই 😒\nযাও ভালো মুন্সী দেখো গা জান 😘");
+      message.reply("ইমোজি দিয়ে লাভ নাই 😃\nযাও ভালো মুন্সী দেখো গা জান 💋");
     }
   }
 };
