@@ -27,8 +27,8 @@ module.exports = {
 │ 🏡 Lᴏᴄᴀᴛɪᴏɴ : Rangpur - Kurigram
 ├─ 🔗 Cᴏɴᴛᴀᴄᴛ ─╮
 │ 📘 Facebook  : Mohammad Maruf
-│ 💬 Telegram : 01994001246 
-│ 📞 WhatsApp  : 01994001246
+│ 💬 Telegram : ❤️💚💛🩷🩵💙 
+│ 📞 WhatsApp  : ❤️💚💛🩷🩵💙
 ╰────────────────╯`;
 
     const cacheDir = path.join(__dirname, "cache");
