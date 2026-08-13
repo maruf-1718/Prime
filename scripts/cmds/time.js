@@ -5,7 +5,7 @@ const path = require('path');
 module.exports.config = {
   name: "time",
   version: "11.0",
-  author: "MOHAMMAD AKASH",
+  author: "Mohammad Maruf",
   countDown: 5,
   role: 0,
   shortDescription: "Calendar up time card",
