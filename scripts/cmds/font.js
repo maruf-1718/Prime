@@ -1,12 +1,7 @@
-// ==========================================
-// Stylish Font Command
-// Author: Mohammad Maruf
-// Version: 1.0.0
-// ==========================================
-
 module.exports = {
   config: {
     name: "font",
+
     aliases: [
       "f1", "f2", "f3", "f4", "f5",
       "f6", "f7", "f8", "f9", "f10",
@@ -15,6 +10,7 @@ module.exports = {
       "f21", "f22", "f23", "f24", "f25",
       "f26", "f27", "f28", "f29", "f30"
     ],
+
     version: "1.0.0",
     author: "Mohammad Maruf",
     countDown: 2,
@@ -23,7 +19,7 @@ module.exports = {
     shortDescription: "Stylish Font Converter",
 
     longDescription:
-      "Convert your text into 30 different stylish font styles.",
+      "Convert text into 30 different stylish font styles.",
 
     category: "utility",
 
@@ -39,75 +35,78 @@ module.exports = {
     // ==============================
     const react = async (emoji) => {
       try {
-        if (typeof api.setMessageReaction === "function") {
-          await api.setMessageReaction(
-            emoji,
-            event.messageID,
-            () => {}
-          );
-        }
+        await api.setMessageReaction(
+          emoji,
+          event.messageID,
+          () => {}
+        );
       } catch (e) {
         console.error("Reaction Error:", e);
       }
     };
 
     // ==============================
-    // Text check
+    // Detect f1 - f30
     // ==============================
-    if (!args.length) {
-      await react("❌");
 
-      return message.reply(
-        `╭━━━〔 ✨ 𝐅𝐎𝐍𝐓 〕━━━╮
-┃
-┃ 🔤 𝐅𝟏 → 𝐅𝟑𝟎
-┃
-┃ ব্যবহার:
-┃ ➤ f1 Hello Maruf
-┃ ➤ f7 Hello Maruf
-┃ ➤ f15 Hello Maruf
-┃ ➤ f30 Hello Maruf
-┃
-╰━━━━━━━━━━━━━━━━╯
-👑 𝐌𝐨𝐡𝐚𝐦𝐦𝐚𝐝 𝐌𝐚𝐫𝐮𝐟 ❤️‍🩹🎀`
-      );
-    }
+    const body = String(event.body || "").trim();
 
-    // ==============================
-    // Detect f1-f30
-    // ==============================
-    const firstArg = args[0].toLowerCase();
+    const match = body.match(
+      /^(?:f)([1-9]|[12][0-9]|30)\b/i
+    );
 
     let fontNumber;
     let text;
 
-    if (/^f([1-9]|[12][0-9]|30)$/.test(firstArg)) {
+    // f1 Hello / f7 Maruf
+    if (match) {
 
-      fontNumber = parseInt(firstArg.substring(1));
-      text = args.slice(1).join(" ");
+      fontNumber = parseInt(match[1]);
 
-    } else if (
-      firstArg === "font"
+      text = body
+        .replace(
+          /^(?:f)([1-9]|[12][0-9]|30)\b/i,
+          ""
+        )
+        .trim();
+
+    }
+
+    // font 1 Hello
+    else if (
+      args[0] &&
+      args[0].toLowerCase() === "font"
     ) {
 
       fontNumber = parseInt(args[1]);
-      text = args.slice(2).join(" ");
 
-    } else {
+      text = args
+        .slice(2)
+        .join(" ")
+        .trim();
+
+    }
+
+    else {
 
       await react("❌");
 
       return message.reply(
-        `❌ Invalid font command!\n\n` +
-        `Use: f1 - f30\n\n` +
-        `Example:\n` +
-        `f7 Hello Maruf`
+        `╭━━━〔 ❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 〕━━━╮
+┃
+┃ Use: f1 - f30
+┃
+┃ Example:
+┃ ➤ f7 Hello Maruf
+┃
+╰━━━━━━━━━━━━━━━━╯`
       );
     }
 
     // ==============================
-    // Font number check
+    // Check Font Number
     // ==============================
+
     if (
       !Number.isInteger(fontNumber) ||
       fontNumber < 1 ||
@@ -117,38 +116,46 @@ module.exports = {
       await react("❌");
 
       return message.reply(
-        `❌ Invalid font number!\n\n` +
-        `Available: f1 - f30`
+        `❌ Invalid font number!
+
+Available fonts:
+f1 - f30`
       );
     }
 
     // ==============================
-    // Text check
+    // Check Text
     // ==============================
-    if (!text || !text.trim()) {
+
+    if (!text) {
 
       await react("❌");
 
       return message.reply(
-        `❌ Text লিখতে হবে!\n\n` +
-        `Example:\n` +
-        `f${fontNumber} Hello Maruf`
+        `❌ Text দিতে হবে!
+
+Example:
+f${fontNumber} Hello Maruf`
       );
     }
 
     // ==============================
     // Convert
     // ==============================
+
     try {
 
-      const result = convertFont(text, fontNumber);
+      const result = convertFont(
+        text,
+        fontNumber
+      );
 
-      if (!result || !result.trim()) {
-        throw new Error("Empty conversion result");
+      if (!result) {
+        throw new Error("Conversion failed");
       }
 
-      // Successful
-      await react("✅");
+      // SUCCESS REACTION
+      await react("🔰");
 
       return message.reply(
         `╭━━━〔 ✨ 𝐅${fontNumber} 〕━━━╮
@@ -160,13 +167,15 @@ module.exports = {
 
     } catch (error) {
 
-      console.error("Font Error:", error);
+      console.error(
+        "Font Conversion Error:",
+        error
+      );
 
-      await react("❌");
+      await react("⚠️");
 
       return message.reply(
-        `❌ Font conversion failed!\n\n` +
-        `Please try again.`
+        "❌ Font conversion failed!"
       );
     }
   }
@@ -249,11 +258,11 @@ function convertFont(text, number) {
         0x1D7F6
       );
 
-    // F9
+    // F9 — Double Struck
     case 9:
       return doubleStruck(text);
 
-    // F10
+    // F10 — Fraktur
     case 10:
       return fraktur(text);
 
@@ -261,47 +270,47 @@ function convertFont(text, number) {
     case 11:
       return `𝕭𝖔𝖑𝖉 ${fraktur(text)}`;
 
-    // F12
+    // F12 — Script
     case 12:
       return script(text);
 
     // F13
     case 13:
-      return `𝓑𝓸𝓵𝓭 ${script(text)}`;
+      return script(text);
 
-    // F14
+    // F14 — Circled
     case 14:
       return circled(text);
 
-    // F15
+    // F15 — Parenthesized
     case 15:
       return parenthesized(text);
 
-    // F16
+    // F16 — Fullwidth
     case 16:
       return fullwidth(text);
 
-    // F17
+    // F17 — Small Caps
     case 17:
       return smallCaps(text);
 
-    // F18
+    // F18 — Superscript
     case 18:
       return superscript(text);
 
-    // F19
+    // F19 — Subscript
     case 19:
       return subscript(text);
 
-    // F20
+    // F20 — Bubble
     case 20:
-      return `ⓑⓤⓑⓑⓛⓔ ${bubble(text)}`;
+      return circled(text);
 
-    // F21
+    // F21 — Square
     case 21:
       return square(text);
 
-    // F22
+    // F22 — Negative Square
     case 22:
       return negativeSquare(text);
 
@@ -343,7 +352,7 @@ function convertFont(text, number) {
       )} 𓆪』`;
 
     default:
-      throw new Error("Invalid font number");
+      return null;
   }
 }
 
@@ -401,16 +410,18 @@ function unicodeFont(text, upper, lower, digit) {
 function doubleStruck(text) {
 
   const map = {
-    A:"𝔸",B:"𝔹",C:"ℂ",D:"𝔻",E:"𝔼",F:"𝔽",
-    G:"𝔾",H:"ℍ",I:"𝕀",J:"𝕁",K:"𝕂",L:"𝕃",
-    M:"𝕄",N:"ℕ",O:"𝕆",P:"ℙ",Q:"ℚ",R:"ℝ",
-    S:"𝕊",T:"𝕋",U:"𝕌",V:"𝕍",W:"𝕎",X:"𝕏",
+    A:"𝔸",B:"𝔹",C:"ℂ",D:"𝔻",E:"𝔼",
+    F:"𝔽",G:"𝔾",H:"ℍ",I:"𝕀",J:"𝕁",
+    K:"𝕂",L:"𝕃",M:"𝕄",N:"ℕ",O:"𝕆",
+    P:"ℙ",Q:"ℚ",R:"ℝ",S:"𝕊",T:"𝕋",
+    U:"𝕌",V:"𝕍",W:"𝕎",X:"𝕏",
     Y:"𝕐",Z:"ℤ",
 
-    a:"𝕒",b:"𝕓",c:"𝕔",d:"𝕕",e:"𝕖",f:"𝕗",
-    g:"𝕘",h:"𝕙",i:"𝕚",j:"𝕛",k:"𝕜",l:"𝕝",
-    m:"𝕞",n:"𝕟",o:"𝕠",p:"𝕡",q:"𝕢",r:"𝕣",
-    s:"𝕤",t:"𝕥",u:"𝕦",v:"𝕧",w:"𝕨",x:"𝕩",
+    a:"𝕒",b:"𝕓",c:"𝕔",d:"𝕕",e:"𝕖",
+    f:"𝕗",g:"𝕘",h:"𝕙",i:"𝕚",j:"𝕛",
+    k:"𝕜",l:"𝕝",m:"𝕞",n:"𝕟",o:"𝕠",
+    p:"𝕡",q:"𝕢",r:"𝕣",s:"𝕤",t:"𝕥",
+    u:"𝕦",v:"𝕧",w:"𝕨",x:"𝕩",
     y:"𝕪",z:"𝕫"
   };
 
@@ -427,16 +438,18 @@ function doubleStruck(text) {
 function fraktur(text) {
 
   const map = {
-    A:"𝔄",B:"𝔅",C:"ℭ",D:"𝔇",E:"𝔈",F:"𝔉",
-    G:"𝔊",H:"ℌ",I:"ℑ",J:"𝔍",K:"𝔎",L:"𝔏",
-    M:"𝔐",N:"𝔑",O:"𝔒",P:"𝔓",Q:"𝔔",R:"ℜ",
-    S:"𝔖",T:"𝔗",U:"𝔘",V:"𝔙",W:"𝔚",X:"𝔛",
+    A:"𝔄",B:"𝔅",C:"ℭ",D:"𝔇",E:"𝔈",
+    F:"𝔉",G:"𝔊",H:"ℌ",I:"ℑ",J:"𝔍",
+    K:"𝔎",L:"𝔏",M:"𝔐",N:"𝔑",O:"𝔒",
+    P:"𝔓",Q:"𝔔",R:"ℜ",S:"𝔖",T:"𝔗",
+    U:"𝔘",V:"𝔙",W:"𝔚",X:"𝔛",
     Y:"𝔜",Z:"ℨ",
 
-    a:"𝔞",b:"𝔟",c:"𝔠",d:"𝔡",e:"𝔢",f:"𝔣",
-    g:"𝔤",h:"𝔥",i:"𝔦",j:"𝔧",k:"𝔨",l:"𝔩",
-    m:"𝔪",n:"𝔫",o:"𝔬",p:"𝔭",q:"𝔮",r:"𝔯",
-    s:"𝔰",t:"𝔱",u:"𝔲",v:"𝔳",w:"𝔴",x:"𝔵",
+    a:"𝔞",b:"𝔟",c:"𝔠",d:"𝔡",e:"𝔢",
+    f:"𝔣",g:"𝔤",h:"𝔥",i:"𝔦",j:"𝔧",
+    k:"𝔨",l:"𝔩",m:"𝔪",n:"𝔫",o:"𝔬",
+    p:"𝔭",q:"𝔮",r:"𝔯",s:"𝔰",t:"𝔱",
+    u:"𝔲",v:"𝔳",w:"𝔴",x:"𝔵",
     y:"𝔶",z:"𝔷"
   };
 
@@ -480,11 +493,6 @@ function script(text) {
 
 function circled(text) {
 
-  const numbers = [
-    "⓪","①","②","③","④",
-    "⑤","⑥","⑦","⑧","⑨"
-  ];
-
   return [...text].map(c => {
 
     const code = c.charCodeAt(0);
@@ -499,10 +507,6 @@ function circled(text) {
       return String.fromCodePoint(
         0x24D0 + code - 97
       );
-    }
-
-    if (code >= 48 && code <= 57) {
-      return numbers[Number(c)];
     }
 
     return c;
@@ -621,15 +625,6 @@ function subscript(text) {
   return [...text]
     .map(c => map[c.toLowerCase()] || c)
     .join("");
-}
-
-
-// ==========================================
-// F20 — Bubble
-// ==========================================
-
-function bubble(text) {
-  return circled(text);
 }
 
 
