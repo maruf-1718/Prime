@@ -15,9 +15,9 @@ const typing = async (api, threadID, ms = 3000) => {
 module.exports = {
   config: {
     name: "baby",
-    aliases: ["maruf", "মারুফ", "bow", "xan", "bby", "bbz"],
+    aliases: ["maruf", "মারুফ", "Oi", "xan", "Kolixa", "bbz"],
     version: "3.6",
-    author: "rX (fixed by GPT)",
+    author: "Mohammad Maruf",
     countDown: 0,
     role: 0,
     shortDescription: "Full Mirai-style Baby AI",
@@ -38,7 +38,7 @@ module.exports = {
       // no text => random reply
       if (!query) {
         await typing(api, threadID, 2000);
-        const ran = ["Bolo baby 💖", "Hea baby 😚", "Yes I'm here 😘", "Ki khobor janu? 🥰"];
+        const ran = ["⎯⎯”Ei je Ami-))🤷🏻‍♂️🎀🪽", "⎯⎯”Hea baby-))😚🪽", "⎯⎯”Yes I'm here-))😘🪽", "⎯⎯”Ki khobor-))🥰🪽"];
         return message.reply(ran[Math.floor(Math.random() * ran.length)], (err, info) => {
           if (!err) global.GoatBot.onReply.set(info.messageID, { commandName: "baby" });
         });
@@ -61,7 +61,7 @@ module.exports = {
 `╭─╼🌟 𝐁𝐚𝐛𝐲 𝐀𝐈 𝐒𝐭𝐚𝐭𝐮𝐬
 ├ 📝 𝐓𝐞𝐚𝐜𝐡𝐞𝐝 𝐐𝐮𝐞𝐬𝐭𝐢𝐨𝐧𝐬: ${res.data.totalQuestions || 0}
 ├ 📦 𝐒𝐭𝐨𝐫𝐞𝐝 𝐑𝐞𝐩𝐥𝐢𝐞𝐬: ${res.data.totalReplies || 0}
-╰─╼👤 𝐃𝐞𝐯: rX 𝐀𝐛𝐝𝐮𝐥𝐥𝐚𝐡`
+╰─╼👤 𝐃𝐞𝐯: Mohammad Maruf`
         );
       }
 
@@ -116,7 +116,7 @@ ${formatted}`
       await typing(api, threadID, 2000);
       const res = await axios.get(`${simsim}/simsimi?text=${encodeURIComponent(query)}&senderName=${encodeURIComponent(senderName)}`, { timeout: 15000 });
 
-      let responses = Array.isArray(res.data.response) ? res.data.response : [res.data.response || "Hmm baby 😚"];
+      let responses = Array.isArray(res.data.response) ? res.data.response : [res.data.response || "⎯⎯”Hmm baby-))🎀🪽"];
       for (const r of responses) {
         await new Promise(resolve => {
           message.reply(r, (err, info) => {
@@ -162,13 +162,13 @@ ${formatted}`
 
     try {
       // triggers only
-      const triggers = ["baby","bby","xan","bbz","mari","মারিয়া","bot"];
+      const triggers = ["baby","Oi","xan","bbz","maruf","মারুফ","bot"];
       if (triggers.includes(raw)) {
         await typing(api, threadID, 5000);
         const funny = [
-          "𝘬𝘪 𝘏𝘰𝘪𝘴𝘦 𝘑𝘢𝘯 𝘣𝘰𝘭𝘰 😿", "𝘌𝘵𝘰 𝘋𝘢𝘬𝘰 𝘒𝘦𝘯 𝘚𝘶𝘯𝘴𝘪 𝘛𝘰 🙆‍♀️", "Eto Dakle Leave Nimu Kintu 😑🎀",
+          "⎯⎯”Ki Hoicheh Brahhh-))🫵😑", "⎯⎯”Eto Dakadaki Valo lage nahh-))😏🤫", "Eto Dakle Leave Nimu Kintu 😑🎀",
           "𝘛𝘶𝘮𝘪 𝘋𝘢𝘬𝘭𝘦𝘪 𝘊𝘰𝘭𝘦 𝘈𝘴𝘪 🙆‍♀️", "ওই জান এতোবার ডাকো কেন 🥹", "আমাকে না ডেকে মারুফ ভাই কে প্রোপোজ কর 🌷🫶",
-          "হুম বলো পাখি 🫶🐤 ", "তুমারে রাইতে ভালোবাসি 😘", "আমাকে ডাকছো? 🙂"
+          "হুম বলো পাখি 🫶🐤 ", "আমারে না ডেকে তুর বউ রে কল দে 😏🫵", "আমাকে ডাকছো? 🙂"
         ];
         return message.reply(funny[Math.floor(Math.random() * funny.length)], (err, info) => {
           if (!err) global.GoatBot.onReply.set(info.messageID, { commandName: "baby" });
