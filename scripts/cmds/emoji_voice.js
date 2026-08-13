@@ -74,12 +74,9 @@ longDescription: "One emoji triggers multiple voices, sent randomly 😘",
       "5️⃣": ["https://files.catbox.moe/12grz0.mp3"],
       "6️⃣": ["https://files.catbox.moe/aaqddo.mp3"],
       "7️⃣": ["https://files.catbox.moe/k3acvx.mp3"],
-      "8️⃣":
-["মুড়ি খাও 😏"],
-      "9️⃣":
-[""],
-      "🔟":
-[""]
+      "8️⃣": ["মুড়ি খাও 😏"],
+      "9️⃣": [""],
+      "🔟": [""]
 
     };
 
