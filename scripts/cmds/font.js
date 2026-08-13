@@ -157,12 +157,7 @@ f${fontNumber} Hello Maruf`
       // SUCCESS REACTION
       await react("🔰");
 
-      return message.reply(
-        `╭━━━〔 ✨ 𝐅${fontNumber} 〕━━━╮
-┃
-┃ ${result}
-┃
-╰━━━━━━━━━━━━━━━━╯`
+      return message.reply(result);
       );
 
     } catch (error) {
