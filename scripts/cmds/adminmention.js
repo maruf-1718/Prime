@@ -2,7 +2,7 @@ module.exports = {
   config: {
     name: "adminmention",
     version: "1.3.2",
-    author: "MOHAMMAD AKASH",
+    author: "Mohammad Maruf",
     countDown: 0,
     role: 0,
     shortDescription: "Replies angrily when someone tags admins",
@@ -27,10 +27,10 @@ module.exports = {
     // র‍্যান্ডম রাগী রিপ্লাই
     const REPLIES = [
       " ওরে মেনশন দিস না বউ নিয়া চিপায় গেছে 😩🐸",
-      "বস এক আবাল তুমারে ডাকতেছে 😂😏",
-      " বুকাচুদা তুই মেনশন দিবি না আমার বস রে 🥹",
-      "মেনশন দিছস আর বেচে যাবি? দারা বলতাছি 😠",
-      "Boss এখন বিজি আছে 😌🥱"
+      "⎯⎯”বস এক বু'দাই তুমারে ডাকতেছে-))😂😏",
+      "⎯⎯”অই বুকা'চুদা তুই মেনশন দিবি না আমার বস Maruf রে-))😑🥹",
+      "⎯⎯”মেনশন দিছস আর বেচে যাবি? W8 বলতাছি Boss রে-))🫵😠",
+      "⎯⎯”Boss এখন Busy আছে-))😌🥱"
     ];
 
     const randomReply = REPLIES[Math.floor(Math.random() * REPLIES.length)];
