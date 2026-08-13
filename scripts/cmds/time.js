@@ -166,7 +166,7 @@ async function generateUpCard(data) {
   ctx.fillStyle = '#00ffcc';
   ctx.shadowColor = '#00ffcc';
   ctx.shadowBlur = 30;
-  ctx.fillText('12-Hour • Goat Bot', width / 2, height - 70);
+  ctx.fillText('Mohammad Maruf', width / 2, height - 70);
   ctx.shadowColor = 'transparent';
 
   // Save
