@@ -13,7 +13,7 @@
     "language": "en",
     "notesLanguage": "change language using ISO 639-1 code",
     "nickNameBot": "⏤꯭֯😈⃪꯭̽ᷝ✮͢ MARUF'S BOT 𝄞 ⋆⃝🥵🪽",
-    "prefix": "/",
+    "prefix": "!",
     "adminOnly": {
         "enable": false,
         "ignoreCommand": []
