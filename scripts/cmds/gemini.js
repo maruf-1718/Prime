@@ -625,7 +625,7 @@ module.exports = {
 		name: "gemini",
 
 		aliases: [
-			"g"
+			"m"
 		],
 
 		version: "1.0.0",
