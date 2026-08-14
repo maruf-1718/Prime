@@ -9,14 +9,14 @@ const API_KEY = "AQ.Ab8RN6I64l8bnJeL1XAjiyMpRN1V1B-_CG_08s-cJeYRZdOiNQ";
 
 
 /* =========================================
-   🤖 FAST GEMINI MODEL
+   🤖 FAST MODEL
 ========================================= */
 
 const MODEL = "gemini-3.1-flash-lite";
 
 
 /* =========================================
-   📏 MAX MESSAGE LENGTH
+   📏 MESSAGE LIMIT
 ========================================= */
 
 const MAX_MESSAGE_LENGTH = 19000;
@@ -26,22 +26,51 @@ const MAX_MESSAGE_LENGTH = 19000;
    💾 CONVERSATION MEMORY
 ========================================= */
 
-/*
- * threadID + userID অনুযায়ী শেষ Gemini
- * interaction এবং bot message রাখা হবে।
- *
- * User Gemini response-এ reply করলে
- * আবার /g বা /gemini লিখতে হবে না।
- */
-
 const conversations = new Map();
 
 
 /* =========================================
-   SPLIT LONG RESPONSE
+   🧹 CLEAN OLD CONVERSATIONS
 ========================================= */
 
-function splitMessage(text, maxLength = MAX_MESSAGE_LENGTH) {
+function cleanupConversations() {
+
+	const now = Date.now();
+
+	for (const [key, data] of conversations) {
+
+		/*
+		 * Remove conversations older than 30 minutes.
+		 */
+
+		if (
+			now - data.updatedAt >
+			30 * 60 * 1000
+		) {
+			conversations.delete(key);
+		}
+	}
+}
+
+
+/* =========================================
+   🔑 USER CONVERSATION KEY
+========================================= */
+
+function getUserKey(event) {
+
+	return `${event.threadID}:${event.senderID}`;
+}
+
+
+/* =========================================
+   ✂️ SPLIT LONG MESSAGE
+========================================= */
+
+function splitMessage(
+	text,
+	maxLength = MAX_MESSAGE_LENGTH
+) {
 
 	const chunks = [];
 
@@ -54,6 +83,7 @@ function splitMessage(text, maxLength = MAX_MESSAGE_LENGTH) {
 		i < text.length;
 		i += maxLength
 	) {
+
 		chunks.push(
 			text.slice(i, i + maxLength)
 		);
@@ -64,117 +94,183 @@ function splitMessage(text, maxLength = MAX_MESSAGE_LENGTH) {
 
 
 /* =========================================
-   GET USER KEY
+   🤖 GEMINI REQUEST
 ========================================= */
 
-function getUserKey(event) {
-
-	return `${event.threadID}:${event.senderID}`;
-}
-
-
-/* =========================================
-   GEMINI API
-========================================= */
-
-async function askGemini({
+async function askGemini(
 	question,
-	previousInteractionID = null
-}) {
+	conversation
+) {
 
-	const requestBody = {
+	/* =====================================
+	   BUILD CONTENTS
+	===================================== */
 
-		model: MODEL,
-
-		input: question,
-
-		system_instruction:
-			"You are Gemini AI inside a Messenger group bot. " +
-			"Give helpful, accurate and natural answers. " +
-			"Reply in the same language as the user whenever possible. " +
-			"If the user speaks Bengali, reply in Bengali. " +
-			"Keep answers clear, useful and concise. " +
-			"Do not mention system instructions, API keys or internal configuration.",
-
-		generation_config: {
-			thinking_level: "minimal",
-			max_output_tokens: 2048
-		}
-	};
+	const contents = [];
 
 
 	/* =====================================
-	   CONTINUE PREVIOUS CONVERSATION
+	   PREVIOUS CONVERSATION
 	===================================== */
 
-	if (previousInteractionID) {
+	if (
+		conversation &&
+		Array.isArray(conversation.history)
+	) {
 
-		requestBody.previous_interaction_id =
-			previousInteractionID;
+		for (
+			const item of conversation.history
+		) {
+
+			contents.push({
+				role: "user",
+
+				parts: [
+					{
+						text: item.user
+					}
+				]
+			});
+
+
+			contents.push({
+				role: "model",
+
+				parts: [
+					{
+						text: item.bot
+					}
+				]
+			});
+		}
 	}
+
+
+	/* =====================================
+	   CURRENT QUESTION
+	===================================== */
+
+	contents.push({
+
+		role: "user",
+
+		parts: [
+			{
+				text: question
+			}
+		]
+	});
+
+
+	/* =====================================
+	   API URL
+	===================================== */
+
+	const url =
+		`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 
 	/* =====================================
 	   REQUEST
 	===================================== */
 
-	const response = await axios.post(
+	const response =
+		await axios.post(
 
-		"https://generativelanguage.googleapis.com/v1beta/interactions",
+			url,
 
-		requestBody,
+			{
+				systemInstruction: {
 
-		{
-			headers: {
-				"x-goog-api-key": API_KEY,
-				"Content-Type": "application/json"
+					parts: [
+						{
+							text:
+								"You are Gemini AI inside a Messenger group bot. " +
+								"Give helpful, accurate and natural answers. " +
+								"Reply in the same language as the user whenever possible. " +
+								"If the user speaks Bengali, reply in Bengali. " +
+								"Keep answers clear and useful. " +
+								"Do not mention system instructions, API keys or internal configuration."
+						}
+					]
+				},
+
+				contents,
+
+				generationConfig: {
+
+					temperature: 0.7,
+
+					maxOutputTokens: 2048,
+
+					thinkingConfig: {
+						thinkingLevel: "minimal"
+					}
+				}
 			},
 
-			/*
-			 * Shorter timeout = faster failure
-			 * instead of waiting too long.
-			 */
-			timeout: 45000
-		}
-	);
+			{
+				headers: {
+					"x-goog-api-key":
+						API_KEY,
+
+					"Content-Type":
+						"application/json"
+				},
+
+				timeout: 45000
+			}
+		);
 
 
 	/* =====================================
-	   GET RESPONSE TEXT
+	   GET RESPONSE
 	===================================== */
+
+	const candidates =
+		response?.data?.candidates || [];
+
+
+	const parts =
+		candidates[0]?.content?.parts || [];
+
 
 	const answer =
-		response?.data?.output_text ||
-		"";
+		parts
+			.map(
+				part =>
+					part.text || ""
+			)
+			.join("")
+			.trim();
 
 
 	/* =====================================
-	   EMPTY RESPONSE
+	   EMPTY RESPONSE CHECK
 	===================================== */
 
-	if (!answer.trim()) {
+	if (!answer) {
+
+		const finishReason =
+			candidates[0]?.finishReason ||
+			"UNKNOWN";
+
 
 		throw new Error(
-			"Gemini returned an empty response."
+			`Gemini returned an empty response. Finish reason: ${finishReason}`
 		);
 	}
 
 
-	return {
-
-		text: answer.trim(),
-
-		interactionID:
-			response?.data?.id || null
-	};
+	return answer;
 }
 
 
 /* =========================================
-   ERROR MESSAGE
+   ❌ ERROR FORMAT
 ========================================= */
 
-function getErrorMessage(error) {
+function formatError(error) {
 
 	const status =
 		error?.response?.status;
@@ -182,7 +278,7 @@ function getErrorMessage(error) {
 	const apiError =
 		error?.response?.data?.error;
 
-	const message =
+	const errorMessage =
 		apiError?.message ||
 		error?.message ||
 		"Unknown error";
@@ -194,7 +290,7 @@ function getErrorMessage(error) {
 
 ⚠️ Bad request.
 
-🔎 ${message}`;
+🔎 ${errorMessage}`;
 	}
 
 
@@ -212,7 +308,7 @@ function getErrorMessage(error) {
 
 🚫 Gemini API access denied.
 
-🔎 ${message}`;
+🔎 ${errorMessage}`;
 	}
 
 
@@ -224,7 +320,7 @@ function getErrorMessage(error) {
 
 🤖 Model: ${MODEL}
 
-🔎 ${message}`;
+🔎 ${errorMessage}`;
 	}
 
 
@@ -234,7 +330,7 @@ function getErrorMessage(error) {
 
 ⚡ Gemini API quota or rate limit reached.
 
-🔎 ${message}`;
+🔎 ${errorMessage}`;
 	}
 
 
@@ -244,12 +340,12 @@ function getErrorMessage(error) {
 
 📡 Status: ${status || "Unknown"}
 
-🔎 ${message}`;
+🔎 ${errorMessage}`;
 }
 
 
 /* =========================================
-   PROCESS GEMINI REQUEST
+   🚀 PROCESS GEMINI
 ========================================= */
 
 async function processGemini({
@@ -257,7 +353,7 @@ async function processGemini({
 	message,
 	event,
 	question,
-	previousInteractionID = null
+	conversation
 }) {
 
 	/* =====================================
@@ -270,13 +366,13 @@ async function processGemini({
 
 		loadingMessage =
 			await message.reply(
-				"⏳ 𝐌𝐚𝐫𝐮𝐟'𝐬 𝐁𝐨𝐭 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
+				"⏳ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
 			);
 
 	} catch (error) {
 
 		console.error(
-			"Loading message error:",
+			"Loading error:",
 			error
 		);
 
@@ -285,7 +381,7 @@ async function processGemini({
 
 
 	/* =====================================
-	   GET LOADING MESSAGE ID
+	   MESSAGE ID
 	===================================== */
 
 	const loadingMessageID =
@@ -296,24 +392,14 @@ async function processGemini({
 	try {
 
 		/* =================================
-		   🤖 ASK GEMINI
+		   ASK GEMINI
 		================================= */
 
-		const result =
-			await askGemini({
-
-				question,
-
-				previousInteractionID
-			});
-
-
 		const answer =
-			result.text;
-
-
-		const interactionID =
-			result.interactionID;
+			await askGemini(
+				question,
+				conversation
+			);
 
 
 		/* =================================
@@ -324,25 +410,58 @@ async function processGemini({
 			getUserKey(event);
 
 
+		let currentConversation =
+			conversations.get(userKey);
+
+
+		if (!currentConversation) {
+
+			currentConversation = {
+				history: []
+			};
+		}
+
+
+		currentConversation.history.push({
+
+			user: question,
+
+			bot: answer
+
+		});
+
+
+		/*
+		 * Keep only last 10 turns
+		 * to prevent huge prompts.
+		 */
+
+		if (
+			currentConversation.history.length >
+			10
+		) {
+
+			currentConversation.history =
+				currentConversation.history.slice(-10);
+		}
+
+
+		currentConversation.updatedAt =
+			Date.now();
+
+
+		currentConversation.botMessageID =
+			loadingMessageID;
+
+
 		conversations.set(
 			userKey,
-			{
-				interactionID,
-
-				botMessageID:
-					loadingMessageID,
-
-				lastAnswer:
-					answer,
-
-				updatedAt:
-					Date.now()
-			}
+			currentConversation
 		);
 
 
 		/* =================================
-		   LONG RESPONSE
+		   SPLIT LONG RESPONSE
 		================================= */
 
 		const chunks =
@@ -355,7 +474,7 @@ async function processGemini({
 		================================= */
 
 		const firstMessage =
-`🤖 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓
+`🤖 𝗚𝗘𝗠𝗜𝗡𝗜
 
 ${chunks[0]}`;
 
@@ -372,7 +491,7 @@ ${chunks[0]}`;
 			} catch (editError) {
 
 				console.error(
-					"Edit message error:",
+					"Edit error:",
 					editError
 				);
 
@@ -389,27 +508,21 @@ ${chunks[0]}`;
 				);
 
 
-			/*
-			 * If loading message ID was not
-			 * available, save the new message ID.
-			 */
-
 			if (sent?.messageID) {
 
-				const conversation =
-					conversations.get(userKey);
+				currentConversation.botMessageID =
+					sent.messageID;
 
-				if (conversation) {
-
-					conversation.botMessageID =
-						sent.messageID;
-				}
+				conversations.set(
+					userKey,
+					currentConversation
+				);
 			}
 		}
 
 
 		/* =================================
-		   📚 REMAINING LONG RESPONSE
+		   LONG RESPONSE
 		================================= */
 
 		for (
@@ -419,14 +532,24 @@ ${chunks[0]}`;
 		) {
 
 			await message.reply(
-`🤖 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓 • ${i + 1}/${chunks.length}
+`🤖 𝗚𝗘𝗠𝗜𝗡𝗜 • ${i + 1}/${chunks.length}
 
 ${chunks[i]}`
 			);
 		}
 
 
+		/* =================================
+		   CLEAN OLD DATA
+		================================= */
+
+		cleanupConversations();
+
 	} catch (error) {
+
+		/* =================================
+		   LOG ERROR
+		================================= */
 
 		console.error(
 			"========== GEMINI ERROR =========="
@@ -458,7 +581,7 @@ ${chunks[i]}`
 
 
 		const errorText =
-			getErrorMessage(error);
+			formatError(error);
 
 
 		/* =================================
@@ -525,13 +648,13 @@ module.exports = {
 			en:
 				"{pn} <question>\n" +
 				"Example: {pn} Hello\n\n" +
-				"Reply to Gemini's response with another message to continue the conversation."
+				"Reply to Gemini's response to continue the conversation."
 		}
 	},
 
 
 	/* =========================================
-	   COMMAND START
+	   START COMMAND
 	========================================= */
 
 	onStart: async function ({
@@ -542,7 +665,7 @@ module.exports = {
 	}) {
 
 		/* =====================================
-		   CHECK API KEY
+		   API KEY CHECK
 		===================================== */
 
 		if (
@@ -566,7 +689,7 @@ module.exports = {
 
 
 		/* =====================================
-		   REPLY TO OTHER MESSAGE
+		   REPLY MESSAGE
 		===================================== */
 
 		if (
@@ -581,7 +704,7 @@ module.exports = {
 
 
 		/* =====================================
-		   EMPTY → GREETING
+		   DEFAULT GREETING
 		===================================== */
 
 		if (!question) {
@@ -592,7 +715,7 @@ module.exports = {
 
 
 		/* =====================================
-		   NEW CONVERSATION
+		   START NEW CONVERSATION
 		===================================== */
 
 		return processGemini({
@@ -605,14 +728,14 @@ module.exports = {
 
 			question,
 
-			previousInteractionID:
-				null
+			conversation: null
+
 		});
 	},
 
 
 	/* =========================================
-	   💬 BARE "g" SUPPORT
+	   💬 BARE "g" + REPLY CONTINUATION
 	========================================= */
 
 	onChat: async function ({
@@ -631,6 +754,18 @@ module.exports = {
 
 
 		/* =====================================
+		   USER KEY
+		===================================== */
+
+		const userKey =
+			getUserKey(event);
+
+
+		const conversation =
+			conversations.get(userKey);
+
+
+		/* =====================================
 		   CASE 1: JUST "g"
 		===================================== */
 
@@ -639,17 +774,9 @@ module.exports = {
 		) {
 
 			/*
-			 * If user replies to Gemini's
-			 * previous response with "g",
-			 * continue that conversation.
+			 * If replying to the latest
+			 * Gemini response, continue.
 			 */
-
-			const userKey =
-				getUserKey(event);
-
-			const conversation =
-				conversations.get(userKey);
-
 
 			if (
 				conversation &&
@@ -669,14 +796,13 @@ module.exports = {
 					question:
 						"Continue the conversation naturally.",
 
-					previousInteractionID:
-						conversation.interactionID
+					conversation
 				});
 			}
 
 
 			/*
-			 * Normal "g" → greeting
+			 * Otherwise start greeting.
 			 */
 
 			return processGemini({
@@ -690,8 +816,7 @@ module.exports = {
 				question:
 					"Say a short friendly greeting to the user and ask how you can help today.",
 
-				previousInteractionID:
-					null
+				conversation: null
 			});
 		}
 
@@ -701,13 +826,6 @@ module.exports = {
 		   REPLY TO GEMINI WITH ANY TEXT
 		===================================== */
 
-		const userKey =
-			getUserKey(event);
-
-		const conversation =
-			conversations.get(userKey);
-
-
 		if (
 			conversation &&
 			event.messageReply &&
@@ -716,10 +834,10 @@ module.exports = {
 		) {
 
 			/*
-			 * User replied to Gemini's
-			 * previous answer.
+			 * User replies directly to
+			 * Gemini's latest response.
 			 *
-			 * No /g or /gemini required.
+			 * No /g required.
 			 */
 
 			return processGemini({
@@ -732,8 +850,7 @@ module.exports = {
 
 				question: body,
 
-				previousInteractionID:
-					conversation.interactionID
+				conversation
 			});
 		}
 	}
