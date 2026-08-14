@@ -4,100 +4,371 @@ const { utils } = global;
 module.exports = {
 	config: {
 		name: "prefix",
-		version: "1.4",
-		author: "NTKhang",
+		version: "2.0.0",
+		author: "Mohammad Maruf",
 		countDown: 5,
 		role: 0,
-		description: "Thay đổi dấu lệnh của bot trong box chat của bạn hoặc cả hệ thống bot (chỉ admin bot)",
+
+		description: {
+			en: "Change the bot prefix for this group or globally."
+		},
+
 		category: "config",
+
 		guide: {
-			vi: "   {pn} <new prefix>: thay đổi prefix mới trong box chat của bạn"
-				+ "\n   Ví dụ:"
-				+ "\n    {pn} #"
-				+ "\n\n   {pn} <new prefix> -g: thay đổi prefix mới trong hệ thống bot (chỉ admin bot)"
-				+ "\n   Ví dụ:"
-				+ "\n    {pn} # -g"
-				+ "\n\n   {pn} reset: thay đổi prefix trong box chat của bạn về mặc định",
-			en: "   {pn} <new prefix>: change new prefix in your box chat"
-				+ "\n   Example:"
-				+ "\n    {pn} #"
-				+ "\n\n   {pn} <new prefix> -g: change new prefix in system bot (only admin bot)"
-				+ "\n   Example:"
-				+ "\n    {pn} # -g"
-				+ "\n\n   {pn} reset: change prefix in your box chat to default"
+			en:
+				"{pn} <new prefix>\n" +
+				"Example: {pn} .\n\n" +
+				"{pn} <new prefix> -g\n" +
+				"Example: {pn} . -g\n\n" +
+				"{pn} reset\n\n" +
+				"Type 'prefix' to view current prefix information."
 		}
 	},
 
 	langs: {
-		vi: {
-			reset: "Đã reset prefix của bạn về mặc định: %1",
-			onlyAdmin: "Chỉ admin mới có thể thay đổi prefix hệ thống bot",
-			confirmGlobal: "Vui lòng thả cảm xúc bất kỳ vào tin nhắn này để xác nhận thay đổi prefix của toàn bộ hệ thống bot",
-			confirmThisThread: "Vui lòng thả cảm xúc bất kỳ vào tin nhắn này để xác nhận thay đổi prefix trong nhóm chat của bạn",
-			successGlobal: "Đã thay đổi prefix hệ thống bot thành: %1",
-			successThisThread: "Đã thay đổi prefix trong nhóm chat của bạn thành: %1",
-			myPrefix: "🌐 Prefix của hệ thống: %1\n🛸 Prefix của nhóm bạn: %2"
-		},
 		en: {
-			reset: "Your prefix has been reset to default: %1",
-			onlyAdmin: "Only admin can change prefix of system bot",
-			confirmGlobal: "Please react to this message to confirm change prefix of system bot",
-			confirmThisThread: "Please react to this message to confirm change prefix in your box chat",
-			successGlobal: "Changed prefix of system bot to: %1",
-			successThisThread: "Changed prefix in your box chat to: %1",
-			myPrefix: "Hey senpai! ~_~\n🌐 Global prefix: %1\n🛸 Your group chat prefix: %2"
+			reset:
+				"✅ 𝗣𝗿𝗲𝗳𝗶𝘅 𝗥𝗲𝘀𝗲𝘁\n\n" +
+				"🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
+				"🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2",
+
+			onlyAdmin:
+				"❌ 𝗔𝗰𝗰𝗲𝘀𝘀 𝗗𝗲𝗻𝗶𝗲𝗱\n\n" +
+				"🎛️ Only bot administrators can change the system prefix.",
+
+			confirmGlobal:
+				"⚠️ 𝗚𝗹𝗼𝗯𝗮𝗹 𝗣𝗿𝗲𝗳𝗶𝘅 𝗖𝗵𝗮𝗻𝗴𝗲\n\n" +
+				"📡 𝗦𝘆𝘀𝘁𝗲𝗺 : %1\n" +
+				"🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2\n\n" +
+				"💎 React to this message to confirm.",
+
+			confirmThisThread:
+				"⚠️ 𝗚𝗿𝗼𝘂𝗽 𝗣𝗿𝗲𝗳𝗶𝘅 𝗖𝗵𝗮𝗻𝗴𝗲\n\n" +
+				"🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
+				"🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2\n\n" +
+				"💎 React to this message to confirm.",
+
+			successGlobal:
+				"✅ 𝗦𝘆𝘀𝘁𝗲𝗺 𝗣𝗿𝗲𝗳𝗶𝘅 𝗨𝗽𝗱𝗮𝘁𝗲𝗱\n\n" +
+				"📡 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %1",
+
+			successThisThread:
+				"✅ 𝗚𝗿𝗼𝘂𝗽 𝗣𝗿𝗲𝗳𝗶𝘅 𝗨𝗽𝗱𝗮𝘁𝗲𝗱\n\n" +
+				"🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
+				"🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2"
 		}
 	},
 
-	onStart: async function ({ message, role, args, commandName, event, threadsData, getLang }) {
-		if (!args[0])
-			return message.SyntaxError();
+	onStart: async function ({
+		message,
+		role,
+		args,
+		commandName,
+		event,
+		threadsData,
+		getLang
+	}) {
 
-		if (args[0] == 'reset') {
-			await threadsData.set(event.threadID, null, "data.prefix");
-			return message.reply(getLang("reset", global.GoatBot.config.prefix));
+		/* =========================
+		   NO ARGUMENT
+		========================= */
+
+		if (!args[0]) {
+			return message.SyntaxError();
 		}
 
+		/* =========================
+		   RESET GROUP PREFIX
+		========================= */
+
+		if (args[0].toLowerCase() === "reset") {
+
+			await threadsData.set(
+				event.threadID,
+				null,
+				"data.prefix"
+			);
+
+			return message.reply(
+				getLang(
+					"reset",
+					await getThreadName(event.threadID),
+					global.GoatBot.config.prefix
+				)
+			);
+		}
+
+		/* =========================
+		   NEW PREFIX
+		========================= */
+
 		const newPrefix = args[0];
+
 		const formSet = {
 			commandName,
 			author: event.senderID,
-			newPrefix
+			newPrefix,
+			messageID: null,
+			setGlobal: false
 		};
 
-		if (args[1] === "-g")
-			if (role < 2)
-				return message.reply(getLang("onlyAdmin"));
-			else
-				formSet.setGlobal = true;
-		else
-			formSet.setGlobal = false;
+		/* =========================
+		   GLOBAL PREFIX
+		========================= */
 
-		return message.reply(args[1] === "-g" ? getLang("confirmGlobal") : getLang("confirmThisThread"), (err, info) => {
-			formSet.messageID = info.messageID;
-			global.GoatBot.onReaction.set(info.messageID, formSet);
-		});
+		if (args[1] === "-g") {
+
+			if (role < 2) {
+				return message.reply(
+					getLang("onlyAdmin")
+				);
+			}
+
+			formSet.setGlobal = true;
+
+			return message.reply(
+				getLang(
+					"confirmGlobal",
+					global.GoatBot.config.prefix,
+					newPrefix
+				),
+				(err, info) => {
+
+					if (err || !info) return;
+
+					formSet.messageID =
+						info.messageID;
+
+					global.GoatBot.onReaction.set(
+						info.messageID,
+						formSet
+					);
+				}
+			);
+		}
+
+		/* =========================
+		   GROUP PREFIX
+		========================= */
+
+		let groupName = "This Group";
+
+		try {
+			groupName = await getThreadName(
+				event.threadID
+			);
+		} catch (_) {}
+
+		return message.reply(
+			getLang(
+				"confirmThisThread",
+				groupName,
+				newPrefix
+			),
+			(err, info) => {
+
+				if (err || !info) return;
+
+				formSet.messageID =
+					info.messageID;
+
+				global.GoatBot.onReaction.set(
+					info.messageID,
+					formSet
+				);
+			}
+		);
 	},
 
-	onReaction: async function ({ message, threadsData, event, Reaction, getLang }) {
-		const { author, newPrefix, setGlobal } = Reaction;
+	/* =========================
+	   CONFIRM REACTION
+	========================= */
+
+	onReaction: async function ({
+		message,
+		threadsData,
+		event,
+		Reaction,
+		getLang
+	}) {
+
+		const {
+			author,
+			newPrefix,
+			setGlobal
+		} = Reaction;
+
+		// Only command user can confirm
 		if (event.userID !== author)
 			return;
+
+		/* =========================
+		   GLOBAL PREFIX
+		========================= */
+
 		if (setGlobal) {
-			global.GoatBot.config.prefix = newPrefix;
-			fs.writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
-			return message.reply(getLang("successGlobal", newPrefix));
+
+			global.GoatBot.config.prefix =
+				newPrefix;
+
+			try {
+				fs.writeFileSync(
+					global.client.dirConfig,
+					JSON.stringify(
+						global.GoatBot.config,
+						null,
+						2
+					)
+				);
+			} catch (err) {
+				console.error(
+					"Failed to save global prefix:",
+					err
+				);
+			}
+
+			return message.reply(
+				getLang(
+					"successGlobal",
+					newPrefix
+				)
+			);
 		}
-		else {
-			await threadsData.set(event.threadID, newPrefix, "data.prefix");
-			return message.reply(getLang("successThisThread", newPrefix));
-		}
+
+		/* =========================
+		   GROUP PREFIX
+		========================= */
+
+		await threadsData.set(
+			event.threadID,
+			newPrefix,
+			"data.prefix"
+		);
+
+		let groupName = "This Group";
+
+		try {
+			groupName = await getThreadName(
+				event.threadID
+			);
+		} catch (_) {}
+
+		return message.reply(
+			getLang(
+				"successThisThread",
+				groupName,
+				newPrefix
+			)
+		);
 	},
 
-	onChat: async function ({ event, message, getLang }) {
-		if (event.body && event.body.toLowerCase() === "prefix")
-			return () => {
-				return message.reply(getLang("myPrefix", global.GoatBot.config.prefix, utils.getPrefix(event.threadID)));
-			};
+	/* =========================
+	   PREFIX INFO
+	========================= */
+
+	onChat: async function ({
+		event,
+		message
+	}) {
+
+		if (
+			!event.body ||
+			event.body.trim().toLowerCase() !== "prefix"
+		) {
+			return;
+		}
+
+		try {
+
+			const groupName =
+				await getThreadName(
+					event.threadID
+				);
+
+			const systemPrefix =
+				global.GoatBot.config.prefix;
+
+			const groupPrefix =
+				utils.getPrefix(
+					event.threadID
+				);
+
+			const type =
+				groupPrefix === systemPrefix
+					? "Default"
+					: "Custom";
+
+			/* Bangladesh Time */
+
+			const time = new Date().toLocaleTimeString(
+				"en-US",
+				{
+					timeZone: "Asia/Dhaka",
+					hour12: true,
+					hour: "2-digit",
+					minute: "2-digit",
+					second: "2-digit"
+				}
+			);
+
+			const msg =
+`🛠️ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢
+
+🎟️ 𝗚𝗿𝗼𝘂𝗽       : ${groupName}
+📡 𝗦𝘆𝘀𝘁𝗲𝗺      : ${systemPrefix}
+🔹 𝗧𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 : ${groupPrefix}
+🎛️ 𝗧𝘆𝗽𝗲       : ${type}
+⏱️ 𝗧𝗶𝗺𝗲        : ${time}
+
+💎 𝗛𝗲𝗹𝗽
+➤ ${groupPrefix}help`;
+
+			return message.reply(msg);
+
+		} catch (error) {
+
+			console.error(
+				"PREFIX INFO ERROR:",
+				error
+			);
+
+			return message.reply(
+`🛠️ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢
+
+📡 𝗦𝘆𝘀𝘁𝗲𝗺      : ${global.GoatBot.config.prefix}
+🔹 𝗧𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 : ${utils.getPrefix(event.threadID)}
+🎛️ 𝗧𝘆𝗽𝗲       : Default
+
+💎 𝗛𝗲𝗹𝗽
+➤ ${utils.getPrefix(event.threadID)}help`
+			);
+		}
 	}
 };
+
+
+/* =========================
+   GET GROUP NAME
+========================= */
+
+async function getThreadName(threadID) {
+
+	try {
+
+		// GoatBot thread data
+		const threadInfo =
+			await global.GoatBot.fcaApi.getThreadInfo(
+				threadID
+			);
+
+		return (
+			threadInfo?.name ||
+			"This Group"
+		);
+
+	} catch (_) {
+
+		return "This Group";
+	}
+}
