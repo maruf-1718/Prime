@@ -22,11 +22,7 @@ module.exports = {
 		}
 	},
 
-	onStart: async function ({
-		message,
-		event,
-		args
-	}) {
+	onStart: async function ({ message, event, args }) {
 
 		/* =====================================
 		   🔑 GEMINI API KEY
@@ -34,7 +30,6 @@ module.exports = {
 		===================================== */
 
 		const API_KEY = "AQ.Ab8RN6I64l8bnJeL1XAjiyMpRN1V1B-_CG_08s-cJeYRZdOiNQ";
-
 
 		/* =====================================
 		   CHECK API KEY
@@ -49,7 +44,6 @@ module.exports = {
 			);
 		}
 
-
 		try {
 
 			/* =====================================
@@ -57,7 +51,6 @@ module.exports = {
 			===================================== */
 
 			let question = args.join(" ").trim();
-
 
 			/* =====================================
 			   REPLY SUPPORT
@@ -71,7 +64,6 @@ module.exports = {
 				question =
 					event.messageReply.body.trim();
 			}
-
 
 			/* =====================================
 			   EMPTY QUESTION
@@ -92,7 +84,6 @@ module.exports = {
 				);
 			}
 
-
 			/* =====================================
 			   LOADING
 			===================================== */
@@ -101,192 +92,57 @@ module.exports = {
 				"⏳ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
 			);
 
-
 			/* =====================================
-			   GET AVAILABLE MODELS
+			   GEMINI MODEL
 			===================================== */
 
-			const modelsResponse = await axios.get(
-				"https://generativelanguage.googleapis.com/v1beta/models",
+			const model = "gemini-2.5-flash";
+
+			const url =
+				`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+			/* =====================================
+			   API REQUEST
+			===================================== */
+
+			const response = await axios.post(
+				url,
 				{
-					headers: {
-						"x-goog-api-key": API_KEY
-					},
-					params: {
-						pageSize: 100
-					},
-					timeout: 30000
-				}
-			);
-
-
-			const models =
-				modelsResponse?.data?.models || [];
-
-
-			/* =====================================
-			   FIND TEXT GENERATION MODEL
-			===================================== */
-
-			const preferredModels = [
-				"gemini-2.5-flash",
-				"gemini-2.5-flash-lite",
-				"gemini-3.5-flash",
-				"gemini-3.5-flash-lite",
-				"gemini-3.6-flash"
-			];
-
-
-			let selectedModel = null;
-
-
-			for (
-				const preferred of preferredModels
-			) {
-
-				const found = models.find(model => {
-
-					const name =
-						model.name
-							?.replace("models/", "");
-
-					const actions =
-						model.supportedGenerationMethods ||
-						model.supportedActions ||
-						[];
-
-					return (
-						name === preferred &&
-						(
-							actions.includes(
-								"generateContent"
-							) ||
-							actions.length === 0
-						)
-					);
-				});
-
-
-				if (found) {
-					selectedModel =
-						found.name
-							.replace("models/", "");
-
-					break;
-				}
-			}
-
-
-			/* =====================================
-			   FALLBACK MODEL
-			===================================== */
-
-			if (!selectedModel) {
-
-				const fallback =
-					models.find(model => {
-
-						const actions =
-							model.supportedGenerationMethods ||
-							model.supportedActions ||
-							[];
-
-						return (
-							actions.includes(
-								"generateContent"
-							) &&
-							/^models\/gemini-/i.test(
-								model.name || ""
-							)
-						);
-					});
-
-
-				if (fallback) {
-					selectedModel =
-						fallback.name
-							.replace("models/", "");
-				}
-			}
-
-
-			/* =====================================
-			   NO MODEL FOUND
-			===================================== */
-
-			if (!selectedModel) {
-
-				return message.reply(
-`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
-
-🔎 No Gemini model supporting text generation was found for this API key.
-
-Please check your Gemini API access.`
-				);
-			}
-
-
-			console.log(
-				"Gemini selected model:",
-				selectedModel
-			);
-
-
-			/* =====================================
-			   GENERATE CONTENT
-			===================================== */
-
-			const apiUrl =
-				`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
-
-
-			const response =
-				await axios.post(
-
-					apiUrl,
-
-					{
-						contents: [
-							{
-								role: "user",
-
-								parts: [
-									{
-										text: question
-									}
-								]
-							}
-						],
-
-						systemInstruction: {
+					contents: [
+						{
 							parts: [
 								{
-									text:
-										"You are Gemini AI inside a Messenger group bot. " +
-										"Give helpful, accurate and natural answers. " +
-										"Reply in the same language as the user whenever possible. " +
-										"If the user speaks Bengali, reply in Bengali. " +
-										"Keep answers clear and easy to understand."
+									text: question
 								}
 							]
-						},
-
-						generationConfig: {
-							maxOutputTokens: 2048
 						}
+					],
+
+					systemInstruction: {
+						parts: [
+							{
+								text:
+									"You are Gemini AI inside a Messenger group bot. " +
+									"Answer clearly, accurately and naturally. " +
+									"Reply in the same language as the user whenever possible. " +
+									"If the user speaks Bengali, reply in Bengali. " +
+									"Keep answers useful and easy to understand."
+							}
+						]
 					},
 
-					{
-						headers: {
-							"x-goog-api-key": API_KEY,
-							"Content-Type":
-								"application/json"
-						},
-
-						timeout: 60000
+					generationConfig: {
+						maxOutputTokens: 2048
 					}
-				);
-
+				},
+				{
+					headers: {
+						"x-goog-api-key": API_KEY,
+						"Content-Type": "application/json"
+					},
+					timeout: 60000
+				}
+			);
 
 			/* =====================================
 			   GET RESPONSE
@@ -295,10 +151,8 @@ Please check your Gemini API access.`
 			const candidates =
 				response?.data?.candidates || [];
 
-
 			const parts =
 				candidates[0]?.content?.parts || [];
-
 
 			const answer =
 				parts
@@ -306,6 +160,9 @@ Please check your Gemini API access.`
 					.join("")
 					.trim();
 
+			/* =====================================
+			   EMPTY RESPONSE
+			===================================== */
 
 			if (!answer) {
 
@@ -322,7 +179,6 @@ No text response received.
 				);
 			}
 
-
 			/* =====================================
 			   SEND ANSWER
 			===================================== */
@@ -332,7 +188,6 @@ No text response received.
 
 ${answer}`
 			);
-
 
 		} catch (error) {
 
@@ -347,38 +202,26 @@ ${answer}`
 				error?.message ||
 				"Unknown error";
 
-
 			console.error(
 				"========== GEMINI ERROR =========="
 			);
 
+			console.error("Status:", status);
+			console.error("Message:", errorMessage);
 			console.error(
-				"Status:",
-				status
-			);
-
-			console.error(
-				"Message:",
-				errorMessage
-			);
-
-			console.error(
-				"Full error:",
-				error?.response?.data ||
-				error
+				"API Error:",
+				error?.response?.data || error
 			);
 
 			console.error(
 				"=================================="
 			);
 
-
 			/* =====================================
-			   ERROR MESSAGES
+			   ERROR HANDLING
 			===================================== */
 
 			if (status === 400) {
-
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
@@ -388,9 +231,7 @@ ${answer}`
 				);
 			}
 
-
 			if (status === 401) {
-
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
@@ -398,47 +239,45 @@ ${answer}`
 				);
 			}
 
-
 			if (status === 403) {
-
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
-🚫 Gemini API access is forbidden.
+🚫 Gemini API access denied.
 
 🔎 ${errorMessage}`
 				);
 			}
 
-
 			if (status === 404) {
-
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
-🔎 No compatible Gemini endpoint was found.
+🔎 Model not found.
 
-The command tried to automatically detect an available model.`
+Model:
+${model}
+
+🔎 ${errorMessage}`
 				);
 			}
 
-
 			if (status === 429) {
-
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
 ⚡ Gemini API quota or rate limit reached.
 
-Please try again later.`
+🔎 ${errorMessage}`
 				);
 			}
-
 
 			return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
 ⚠️ Gemini API request failed.
+
+📡 Status: ${status || "Unknown"}
 
 🔎 ${errorMessage}`
 			);
