@@ -329,10 +329,10 @@ ${formatCommands(categories[category])}
     msg +=
 `━━━✧ ${fancyFont("HOW TO USE")} ✧━━━
 
-   ➜  !<command>
+   ➜  /<command>
 
    ✦ ${fancyFont("Example")}
-   ➜  !owner
+   ➜  /owner
 
 
        ♡ ${fancyFont("Mohammad Maruf")} ♡`;
