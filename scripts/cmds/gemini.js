@@ -35,7 +35,7 @@ module.exports = {
 		   🤖 GEMINI MODEL
 		===================================== */
 
-		const model = "gemini-2.5-flash";
+		const model = "gemini-3.6-flash";
 
 		/* =====================================
 		   🔐 CHECK API KEY
