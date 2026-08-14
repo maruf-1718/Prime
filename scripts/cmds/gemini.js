@@ -4,6 +4,7 @@ const path = require("path");
 
 const TEXT_MODEL = "gemini-3.6-flash";
 const IMAGE_MODEL = "gemini-3.1-flash-image";
+
 const MAX_MESSAGE_LENGTH = 19000;
 
 
@@ -37,8 +38,7 @@ function getQuestion(event, args) {
 		event.messageReply &&
 		event.messageReply.body
 	) {
-		question =
-			event.messageReply.body.trim();
+		question = event.messageReply.body.trim();
 	}
 
 	return question;
@@ -143,32 +143,35 @@ async function downloadImage(url) {
 		extension = ".gif";
 	}
 
-	const tempDir =
+	const cacheDir =
 		path.join(__dirname, "cache");
 
-	await fs.ensureDir(tempDir);
+	await fs.ensureDir(cacheDir);
 
 	const filePath =
 		path.join(
-			tempDir,
-			`gemini_${Date.now()}${extension}`
+			cacheDir,
+			`gemini_input_${Date.now()}${extension}`
 		);
+
+	const buffer =
+		Buffer.from(response.data);
 
 	await fs.writeFile(
 		filePath,
-		Buffer.from(response.data)
+		buffer
 	);
 
 	return {
 		filePath,
-		buffer: Buffer.from(response.data),
+		buffer,
 		mimeType: contentType
 	};
 }
 
 
 /* =========================================
-   GEMINI IMAGE
+   GENERATE / EDIT IMAGE
 ========================================= */
 
 async function generateImage({
@@ -180,7 +183,8 @@ async function generateImage({
 
 	const input = [];
 
-	/* Text prompt */
+
+	/* TEXT PROMPT */
 
 	input.push({
 		type: "text",
@@ -188,14 +192,16 @@ async function generateImage({
 	});
 
 
-	/* Replied image */
+	/* REPLIED IMAGE */
 
 	if (imageData) {
 
 		input.push({
 			type: "image",
-			mime_type: mimeType || "image/jpeg",
-			data: imageData.toString("base64")
+			mime_type:
+				mimeType || "image/jpeg",
+			data:
+				imageData.toString("base64")
 		});
 	}
 
@@ -212,7 +218,7 @@ async function generateImage({
 
 				response_format: {
 					type: "image",
-					mime_type: "image/png",
+					mime_type: "image/jpeg",
 					aspect_ratio: "1:1",
 					image_size: "1K"
 				}
@@ -221,7 +227,8 @@ async function generateImage({
 			{
 				headers: {
 					"x-goog-api-key": API_KEY,
-					"Content-Type": "application/json"
+					"Content-Type":
+						"application/json"
 				},
 
 				timeout: 120000
@@ -241,7 +248,6 @@ async function generateImage({
 		!outputImage ||
 		!outputImage.data
 	) {
-
 		throw new Error(
 			"Gemini did not return an image."
 		);
@@ -256,7 +262,7 @@ async function generateImage({
 
 
 /* =========================================
-   SEND GENERATED IMAGE
+   SEND IMAGE
 ========================================= */
 
 async function sendImage(
@@ -266,21 +272,26 @@ async function sendImage(
 	imageBuffer
 ) {
 
-	const tempDir =
+	const cacheDir =
 		path.join(__dirname, "cache");
 
-	await fs.ensureDir(tempDir);
+	await fs.ensureDir(cacheDir);
+
+
+	/* JPEG FILE */
 
 	const filePath =
 		path.join(
-			tempDir,
-			`gemini_result_${Date.now()}.png`
+			cacheDir,
+			`gemini_result_${Date.now()}.jpg`
 		);
+
 
 	await fs.writeFile(
 		filePath,
 		imageBuffer
 	);
+
 
 	try {
 
@@ -316,7 +327,7 @@ async function sendImage(
 
 
 /* =========================================
-   COMMAND
+   GEMINI COMMAND
 ========================================= */
 
 module.exports = {
@@ -355,7 +366,7 @@ module.exports = {
 
 
 	/* =========================================
-	   ON START
+	   COMMAND START
 	========================================= */
 
 	onStart: async function ({
@@ -417,13 +428,11 @@ module.exports = {
 				return message.reply(
 `🖼️ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗜𝗠𝗔𝗚𝗘
 
-Use:
-
 ➜ ${global.GoatBot.config.prefix}g image <prompt>
 
 Example:
 
-➜ ${global.GoatBot.config.prefix}g image a futuristic red gaming logo
+➜ ${global.GoatBot.config.prefix}g image a beautiful bird
 
 💡 Reply to an image with this command to edit it.`
 				);
@@ -448,6 +457,7 @@ Example:
 
 
 			let repliedImage = null;
+
 
 			try {
 
@@ -486,14 +496,15 @@ Example:
 				let finalPrompt =
 					prompt;
 
+
 				if (repliedImage) {
 
 					finalPrompt =
-						`Edit the provided image according to this instruction:
+`Edit the provided image according to this instruction:
 
 ${prompt}
 
-Preserve important details of the original image unless the instruction specifically asks to change them.`;
+Preserve the important details of the original image unless the instruction specifically asks to change them.`;
 				}
 
 
@@ -520,7 +531,7 @@ Preserve important details of the original image unless the instruction specific
 
 
 				/* =================================
-				   REMOVE LOADING MESSAGE
+				   UPDATE LOADING
 				================================= */
 
 				if (loadingMessageID) {
@@ -549,7 +560,7 @@ Preserve important details of the original image unless the instruction specific
 
 
 				/* =================================
-				   CLEANUP ORIGINAL IMAGE
+				   CLEAN INPUT IMAGE
 				================================= */
 
 				if (
@@ -773,7 +784,7 @@ ${chunks[i]}`
 
 
 		const API_KEY =
-			"YOUR_GEMINI_API_KEY_HERE";
+			"AQ.Ab8RN6I64l8bnJeL1XAjiyMpRN1V1B-_CG_08s-cJeYRZdOiNQ";
 
 
 		if (
@@ -789,6 +800,7 @@ ${chunks[i]}`
 
 
 		let question = "";
+
 
 		if (
 			event.messageReply &&
