@@ -286,7 +286,7 @@ function formatError(error) {
 
 	if (status === 400) {
 
-		return `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+		return `❌ 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓 𝗘𝗥𝗥𝗢𝗥
 
 ⚠️ Bad request.
 
@@ -296,7 +296,7 @@ function formatError(error) {
 
 	if (status === 401) {
 
-		return `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+		return `❌ 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓 𝗘𝗥𝗥𝗢𝗥
 
 🔑 Invalid Gemini API key.`;
 	}
@@ -304,7 +304,7 @@ function formatError(error) {
 
 	if (status === 403) {
 
-		return `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+		return `❌ 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓 𝗘𝗥𝗥𝗢𝗥
 
 🚫 Gemini API access denied.
 
@@ -314,7 +314,7 @@ function formatError(error) {
 
 	if (status === 404) {
 
-		return `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+		return `❌ 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓 𝗘𝗥𝗥𝗢𝗥
 
 🔎 Gemini model not found.
 
@@ -326,7 +326,7 @@ function formatError(error) {
 
 	if (status === 429) {
 
-		return `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+		return `❌ 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓 𝗘𝗥𝗥𝗢𝗥
 
 ⚡ Gemini API quota or rate limit reached.
 
@@ -334,7 +334,7 @@ function formatError(error) {
 	}
 
 
-	return `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+	return `❌ 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓 𝗘𝗥𝗥𝗢𝗥
 
 ⚠️ Gemini API request failed.
 
@@ -366,7 +366,7 @@ async function processGemini({
 
 		loadingMessage =
 			await message.reply(
-				"⏳ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
+				"⏳ 𝐌𝐚𝐫𝐮𝐟'𝐬 𝐁𝐨𝐭 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
 			);
 
 	} catch (error) {
@@ -474,7 +474,7 @@ async function processGemini({
 		================================= */
 
 		const firstMessage =
-`🤖 𝗚𝗘𝗠𝗜𝗡𝗜
+`🤖 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓
 
 ${chunks[0]}`;
 
@@ -532,7 +532,7 @@ ${chunks[0]}`;
 		) {
 
 			await message.reply(
-`🤖 𝗚𝗘𝗠𝗜𝗡𝗜 • ${i + 1}/${chunks.length}
+`🤖 𝐌𝐀𝐑𝐔𝐅'𝐒 𝐁𝐎𝐓 • ${i + 1}/${chunks.length}
 
 ${chunks[i]}`
 			);
