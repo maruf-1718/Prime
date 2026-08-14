@@ -321,7 +321,7 @@ module.exports = {
 🎛️ 𝗧𝘆𝗽𝗲       : ${type}
 ⏱️ 𝗧𝗶𝗺𝗲        : ${time}
 
-💎 𝗛𝗲𝗹𝗽
+💎 𝗧𝘆𝗽𝗲
 ➤ ${groupPrefix}help`;
 
 			return message.reply(msg);
@@ -340,7 +340,7 @@ module.exports = {
 🔹 𝗧𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 : ${utils.getPrefix(event.threadID)}
 🎛️ 𝗧𝘆𝗽𝗲       : Default
 
-💎 𝗛𝗲𝗹𝗽
+💎 𝗧𝘆𝗽𝗲
 ➤ ${utils.getPrefix(event.threadID)}help`
 			);
 		}
