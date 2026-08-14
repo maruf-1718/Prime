@@ -56,9 +56,7 @@ module.exports = {
 			   GET QUESTION
 			===================================== */
 
-			let question = args
-				.join(" ")
-				.trim();
+			let question = args.join(" ").trim();
 
 
 			/* =====================================
@@ -105,73 +103,197 @@ module.exports = {
 
 
 			/* =====================================
-			   GEMINI API
+			   GET AVAILABLE MODELS
 			===================================== */
 
-			const url =
-				"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-
-
-			const response = await axios.post(
-				url,
-
-				{
-					contents: [
-						{
-							role: "user",
-							parts: [
-								{
-									text: question
-								}
-							]
-						}
-					],
-
-					systemInstruction: {
-						parts: [
-							{
-								text:
-									"You are Gemini AI inside a Messenger group bot. " +
-									"Give helpful, accurate and natural answers. " +
-									"Reply in the same language as the user whenever possible. " +
-									"If the user speaks Bengali, reply in Bengali. " +
-									"Keep answers clear and easy to understand."
-							}
-						]
-					},
-
-					generationConfig: {
-						temperature: 0.7,
-						maxOutputTokens: 2048
-					}
-				},
-
+			const modelsResponse = await axios.get(
+				"https://generativelanguage.googleapis.com/v1beta/models",
 				{
 					headers: {
-						"x-goog-api-key": API_KEY,
-						"Content-Type": "application/json"
+						"x-goog-api-key": API_KEY
 					},
-
-					timeout: 60000
+					params: {
+						pageSize: 100
+					},
+					timeout: 30000
 				}
 			);
 
 
+			const models =
+				modelsResponse?.data?.models || [];
+
+
 			/* =====================================
-			   GET GEMINI RESPONSE
+			   FIND TEXT GENERATION MODEL
+			===================================== */
+
+			const preferredModels = [
+				"gemini-2.5-flash",
+				"gemini-2.5-flash-lite",
+				"gemini-3.5-flash",
+				"gemini-3.5-flash-lite",
+				"gemini-3.6-flash"
+			];
+
+
+			let selectedModel = null;
+
+
+			for (
+				const preferred of preferredModels
+			) {
+
+				const found = models.find(model => {
+
+					const name =
+						model.name
+							?.replace("models/", "");
+
+					const actions =
+						model.supportedGenerationMethods ||
+						model.supportedActions ||
+						[];
+
+					return (
+						name === preferred &&
+						(
+							actions.includes(
+								"generateContent"
+							) ||
+							actions.length === 0
+						)
+					);
+				});
+
+
+				if (found) {
+					selectedModel =
+						found.name
+							.replace("models/", "");
+
+					break;
+				}
+			}
+
+
+			/* =====================================
+			   FALLBACK MODEL
+			===================================== */
+
+			if (!selectedModel) {
+
+				const fallback =
+					models.find(model => {
+
+						const actions =
+							model.supportedGenerationMethods ||
+							model.supportedActions ||
+							[];
+
+						return (
+							actions.includes(
+								"generateContent"
+							) &&
+							/^models\/gemini-/i.test(
+								model.name || ""
+							)
+						);
+					});
+
+
+				if (fallback) {
+					selectedModel =
+						fallback.name
+							.replace("models/", "");
+				}
+			}
+
+
+			/* =====================================
+			   NO MODEL FOUND
+			===================================== */
+
+			if (!selectedModel) {
+
+				return message.reply(
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+
+🔎 No Gemini model supporting text generation was found for this API key.
+
+Please check your Gemini API access.`
+				);
+			}
+
+
+			console.log(
+				"Gemini selected model:",
+				selectedModel
+			);
+
+
+			/* =====================================
+			   GENERATE CONTENT
+			===================================== */
+
+			const apiUrl =
+				`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
+
+
+			const response =
+				await axios.post(
+
+					apiUrl,
+
+					{
+						contents: [
+							{
+								role: "user",
+
+								parts: [
+									{
+										text: question
+									}
+								]
+							}
+						],
+
+						systemInstruction: {
+							parts: [
+								{
+									text:
+										"You are Gemini AI inside a Messenger group bot. " +
+										"Give helpful, accurate and natural answers. " +
+										"Reply in the same language as the user whenever possible. " +
+										"If the user speaks Bengali, reply in Bengali. " +
+										"Keep answers clear and easy to understand."
+								}
+							]
+						},
+
+						generationConfig: {
+							maxOutputTokens: 2048
+						}
+					},
+
+					{
+						headers: {
+							"x-goog-api-key": API_KEY,
+							"Content-Type":
+								"application/json"
+						},
+
+						timeout: 60000
+					}
+				);
+
+
+			/* =====================================
+			   GET RESPONSE
 			===================================== */
 
 			const candidates =
-				response?.data?.candidates;
-
-			if (
-				!candidates ||
-				!candidates.length
-			) {
-				throw new Error(
-					"Gemini returned no candidates."
-				);
-			}
+				response?.data?.candidates || [];
 
 
 			const parts =
@@ -185,13 +307,9 @@ module.exports = {
 					.trim();
 
 
-			/* =====================================
-			   EMPTY RESPONSE
-			===================================== */
-
 			if (!answer) {
 
-				const finishReason =
+				const reason =
 					candidates[0]?.finishReason ||
 					"UNKNOWN";
 
@@ -200,7 +318,7 @@ module.exports = {
 
 No text response received.
 
-𝗥𝗲𝗮𝘀𝗼𝗻: ${finishReason}`
+🔎 Reason: ${reason}`
 				);
 			}
 
@@ -218,10 +336,6 @@ ${answer}`
 
 		} catch (error) {
 
-			/* =====================================
-			   GET API ERROR
-			===================================== */
-
 			const status =
 				error?.response?.status;
 
@@ -235,7 +349,7 @@ ${answer}`
 
 
 			console.error(
-				"========== GEMINI API ERROR =========="
+				"========== GEMINI ERROR =========="
 			);
 
 			console.error(
@@ -249,17 +363,18 @@ ${answer}`
 			);
 
 			console.error(
-				"API Error:",
-				apiError
+				"Full error:",
+				error?.response?.data ||
+				error
 			);
 
 			console.error(
-				"======================================"
+				"=================================="
 			);
 
 
 			/* =====================================
-			   USER-FRIENDLY ERROR
+			   ERROR MESSAGES
 			===================================== */
 
 			if (status === 400) {
@@ -279,7 +394,7 @@ ${answer}`
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
-🔑 API key is invalid or unauthorized.`
+🔑 Invalid Gemini API key.`
 				);
 			}
 
@@ -289,9 +404,9 @@ ${answer}`
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
-🚫 API access is forbidden.
+🚫 Gemini API access is forbidden.
 
-Check whether your Gemini API key/project has access to the Gemini API.`
+🔎 ${errorMessage}`
 				);
 			}
 
@@ -301,7 +416,9 @@ Check whether your Gemini API key/project has access to the Gemini API.`
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
-🔎 Gemini model or endpoint was not found.`
+🔎 No compatible Gemini endpoint was found.
+
+The command tried to automatically detect an available model.`
 				);
 			}
 
