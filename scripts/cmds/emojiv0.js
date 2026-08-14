@@ -37,7 +37,7 @@ module.exports = {
         "5️⃣": "https://files.catbox.moe/12grz0.mp3",
         "6️⃣": "https://files.catbox.moe/aaqddo.mp3",
         "7️⃣": "https://files.catbox.moe/k3acvx.mp3",
-        "🤪":
+        "🔞":
 "https://files.catbox.moe/ihmbr7.mp3"
       };
 
