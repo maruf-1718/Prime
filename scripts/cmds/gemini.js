@@ -32,7 +32,13 @@ module.exports = {
 		const API_KEY = "AQ.Ab8RN6I64l8bnJeL1XAjiyMpRN1V1B-_CG_08s-cJeYRZdOiNQ";
 
 		/* =====================================
-		   CHECK API KEY
+		   🤖 GEMINI MODEL
+		===================================== */
+
+		const model = "gemini-2.5-flash";
+
+		/* =====================================
+		   🔐 CHECK API KEY
 		===================================== */
 
 		if (
@@ -47,13 +53,13 @@ module.exports = {
 		try {
 
 			/* =====================================
-			   GET QUESTION
+			   💬 GET QUESTION
 			===================================== */
 
 			let question = args.join(" ").trim();
 
 			/* =====================================
-			   REPLY SUPPORT
+			   ↩️ REPLY MESSAGE SUPPORT
 			===================================== */
 
 			if (
@@ -66,7 +72,7 @@ module.exports = {
 			}
 
 			/* =====================================
-			   EMPTY QUESTION
+			   ❗ EMPTY QUESTION
 			===================================== */
 
 			if (!question) {
@@ -85,7 +91,7 @@ module.exports = {
 			}
 
 			/* =====================================
-			   LOADING
+			   ⏳ LOADING
 			===================================== */
 
 			await message.reply(
@@ -93,23 +99,23 @@ module.exports = {
 			);
 
 			/* =====================================
-			   GEMINI MODEL
+			   🌐 GEMINI API URL
 			===================================== */
-
-			const model = "gemini-2.5-flash";
 
 			const url =
 				`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 			/* =====================================
-			   API REQUEST
+			   🚀 API REQUEST
 			===================================== */
 
 			const response = await axios.post(
 				url,
+
 				{
 					contents: [
 						{
+							role: "user",
 							parts: [
 								{
 									text: question
@@ -123,29 +129,32 @@ module.exports = {
 							{
 								text:
 									"You are Gemini AI inside a Messenger group bot. " +
-									"Answer clearly, accurately and naturally. " +
+									"Give helpful, accurate and natural answers. " +
 									"Reply in the same language as the user whenever possible. " +
 									"If the user speaks Bengali, reply in Bengali. " +
-									"Keep answers useful and easy to understand."
+									"Keep answers clear, useful and easy to understand."
 							}
 						]
 					},
 
 					generationConfig: {
+						temperature: 0.7,
 						maxOutputTokens: 2048
 					}
 				},
+
 				{
 					headers: {
 						"x-goog-api-key": API_KEY,
 						"Content-Type": "application/json"
 					},
+
 					timeout: 60000
 				}
 			);
 
 			/* =====================================
-			   GET RESPONSE
+			   📥 GET RESPONSE
 			===================================== */
 
 			const candidates =
@@ -161,7 +170,7 @@ module.exports = {
 					.trim();
 
 			/* =====================================
-			   EMPTY RESPONSE
+			   ⚠️ EMPTY RESPONSE
 			===================================== */
 
 			if (!answer) {
@@ -175,12 +184,12 @@ module.exports = {
 
 No text response received.
 
-🔎 Reason: ${reason}`
+🔎 𝗥𝗲𝗮𝘀𝗼𝗻: ${reason}`
 				);
 			}
 
 			/* =====================================
-			   SEND ANSWER
+			   ✅ SEND ANSWER
 			===================================== */
 
 			return message.reply(
@@ -190,6 +199,10 @@ ${answer}`
 			);
 
 		} catch (error) {
+
+			/* =====================================
+			   🛑 ERROR DETAILS
+			===================================== */
 
 			const status =
 				error?.response?.status;
@@ -206,11 +219,24 @@ ${answer}`
 				"========== GEMINI ERROR =========="
 			);
 
-			console.error("Status:", status);
-			console.error("Message:", errorMessage);
 			console.error(
-				"API Error:",
-				error?.response?.data || error
+				"Model:",
+				model
+			);
+
+			console.error(
+				"Status:",
+				status
+			);
+
+			console.error(
+				"Message:",
+				errorMessage
+			);
+
+			console.error(
+				"API Response:",
+				error?.response?.data || "No response data"
 			);
 
 			console.error(
@@ -218,7 +244,7 @@ ${answer}`
 			);
 
 			/* =====================================
-			   ERROR HANDLING
+			   🔴 400 ERROR
 			===================================== */
 
 			if (status === 400) {
@@ -231,13 +257,23 @@ ${answer}`
 				);
 			}
 
+			/* =====================================
+			   🔴 401 ERROR
+			===================================== */
+
 			if (status === 401) {
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
-🔑 Invalid Gemini API key.`
+🔑 Invalid Gemini API key.
+
+Please check your API key.`
 				);
 			}
+
+			/* =====================================
+			   🔴 403 ERROR
+			===================================== */
 
 			if (status === 403) {
 				return message.reply(
@@ -249,18 +285,25 @@ ${answer}`
 				);
 			}
 
+			/* =====================================
+			   🔴 404 ERROR
+			===================================== */
+
 			if (status === 404) {
 				return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
 🔎 Model not found.
 
-Model:
-${model}
+🤖 Model: ${model}
 
 🔎 ${errorMessage}`
 				);
 			}
+
+			/* =====================================
+			   🔴 429 ERROR
+			===================================== */
 
 			if (status === 429) {
 				return message.reply(
@@ -272,12 +315,18 @@ ${model}
 				);
 			}
 
+			/* =====================================
+			   🔴 OTHER ERROR
+			===================================== */
+
 			return message.reply(
 `❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
 ⚠️ Gemini API request failed.
 
 📡 Status: ${status || "Unknown"}
+
+🤖 Model: ${model}
 
 🔎 ${errorMessage}`
 			);
