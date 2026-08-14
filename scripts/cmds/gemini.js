@@ -770,7 +770,7 @@ module.exports = {
 		===================================== */
 
 		if (
-			body.toLowerCase() === "g","m"
+			body.toLowerCase() === "g"
 		) {
 
 			/*
