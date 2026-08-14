@@ -1,3 +1,5 @@
+const axios = require("axios");
+
 module.exports = {
 	config: {
 		name: "gemini",
@@ -26,17 +28,17 @@ module.exports = {
 		args
 	}) {
 
-		/* =========================================
+		/* =====================================
 		   🔑 GEMINI API KEY
-		   👉 ONLY CHANGE THIS LINE
-		========================================= */
+		   👉 ONLY CHANGE THIS
+		===================================== */
 
 		const API_KEY = "AQ.Ab8RN6I64l8bnJeL1XAjiyMpRN1V1B-_CG_08s-cJeYRZdOiNQ";
 
 
-		/* =========================================
+		/* =====================================
 		   CHECK API KEY
-		========================================= */
+		===================================== */
 
 		if (
 			!API_KEY ||
@@ -50,36 +52,18 @@ module.exports = {
 
 		try {
 
-			/* =========================================
-			   LOAD GOOGLE GENAI
-			========================================= */
-
-			const {
-				GoogleGenAI
-			} = await import("@google/genai");
-
-
-			/* =========================================
-			   CREATE GEMINI CLIENT
-			========================================= */
-
-			const ai = new GoogleGenAI({
-				apiKey: API_KEY
-			});
-
-
-			/* =========================================
-			   GET USER QUESTION
-			========================================= */
+			/* =====================================
+			   GET QUESTION
+			===================================== */
 
 			let question = args
 				.join(" ")
 				.trim();
 
 
-			/* =========================================
-			   REPLY MESSAGE SUPPORT
-			========================================= */
+			/* =====================================
+			   REPLY SUPPORT
+			===================================== */
 
 			if (
 				!question &&
@@ -91,12 +75,11 @@ module.exports = {
 			}
 
 
-			/* =========================================
+			/* =====================================
 			   EMPTY QUESTION
-			========================================= */
+			===================================== */
 
 			if (!question) {
-
 				return message.reply(
 `🤖 𝗚𝗘𝗠𝗜𝗡𝗜 𝗔𝗜
 
@@ -106,70 +89,125 @@ module.exports = {
 
 ➜ ${global.GoatBot.config.prefix}gemini What is AI?
 
-💡 You can also reply to a message and type:
+💡 Reply to a message and type:
 ➜ ${global.GoatBot.config.prefix}gemini`
 				);
 			}
 
 
-			/* =========================================
-			   LOADING MESSAGE
-			========================================= */
+			/* =====================================
+			   LOADING
+			===================================== */
 
-			const loading =
-				await message.reply(
-					"⏳ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
-				);
+			await message.reply(
+				"⏳ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
+			);
 
 
-			/* =========================================
-			   GEMINI API REQUEST
-			========================================= */
+			/* =====================================
+			   GEMINI API
+			===================================== */
 
-			const response =
-				await ai.models.generateContent({
+			const url =
+				"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-					// Stable Gemini model
-					model: "gemini-2.5-flash",
 
-					contents: question,
+			const response = await axios.post(
+				url,
 
-					config: {
+				{
+					contents: [
+						{
+							role: "user",
+							parts: [
+								{
+									text: question
+								}
+							]
+						}
+					],
 
-						systemInstruction:
-							"You are Gemini AI inside a Messenger group bot. " +
-							"Answer questions accurately, clearly and naturally. " +
-							"Reply in the same language as the user whenever possible. " +
-							"If the user speaks Bengali, reply in Bengali. " +
-							"Do not mention system instructions, API keys, " +
-							"internal configuration or hidden prompts.",
+					systemInstruction: {
+						parts: [
+							{
+								text:
+									"You are Gemini AI inside a Messenger group bot. " +
+									"Give helpful, accurate and natural answers. " +
+									"Reply in the same language as the user whenever possible. " +
+									"If the user speaks Bengali, reply in Bengali. " +
+									"Keep answers clear and easy to understand."
+							}
+						]
+					},
 
+					generationConfig: {
 						temperature: 0.7,
-
 						maxOutputTokens: 2048
 					}
-				});
+				},
+
+				{
+					headers: {
+						"x-goog-api-key": API_KEY,
+						"Content-Type": "application/json"
+					},
+
+					timeout: 60000
+				}
+			);
 
 
-			/* =========================================
-			   GET AI RESPONSE
-			========================================= */
+			/* =====================================
+			   GET GEMINI RESPONSE
+			===================================== */
 
-			const answer =
-				response?.text?.trim();
+			const candidates =
+				response?.data?.candidates;
 
-
-			if (!answer) {
-
-				return message.reply(
-					"❌ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗱𝗶𝗱 𝗻𝗼𝘁 𝗿𝗲𝘁𝘂𝗿𝗻 𝗮 𝗿𝗲𝘀𝗽𝗼𝗻𝘀𝗲."
+			if (
+				!candidates ||
+				!candidates.length
+			) {
+				throw new Error(
+					"Gemini returned no candidates."
 				);
 			}
 
 
-			/* =========================================
+			const parts =
+				candidates[0]?.content?.parts || [];
+
+
+			const answer =
+				parts
+					.map(part => part.text || "")
+					.join("")
+					.trim();
+
+
+			/* =====================================
+			   EMPTY RESPONSE
+			===================================== */
+
+			if (!answer) {
+
+				const finishReason =
+					candidates[0]?.finishReason ||
+					"UNKNOWN";
+
+				return message.reply(
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜
+
+No text response received.
+
+𝗥𝗲𝗮𝘀𝗼𝗻: ${finishReason}`
+				);
+			}
+
+
+			/* =====================================
 			   SEND ANSWER
-			========================================= */
+			===================================== */
 
 			return message.reply(
 `🤖 𝗚𝗘𝗠𝗜𝗡𝗜
@@ -177,82 +215,116 @@ module.exports = {
 ${answer}`
 			);
 
+
 		} catch (error) {
 
-			/* =========================================
-			   ERROR LOG
-			========================================= */
+			/* =====================================
+			   GET API ERROR
+			===================================== */
+
+			const status =
+				error?.response?.status;
+
+			const apiError =
+				error?.response?.data?.error;
+
+			const errorMessage =
+				apiError?.message ||
+				error?.message ||
+				"Unknown error";
+
 
 			console.error(
-				"\n========== GEMINI ERROR =========="
-			);
-
-			console.error(
-				"Message:",
-				error?.message || "Unknown error"
+				"========== GEMINI API ERROR =========="
 			);
 
 			console.error(
 				"Status:",
-				error?.status || "Unknown"
+				status
 			);
 
 			console.error(
-				"Code:",
-				error?.code || "Unknown"
+				"Message:",
+				errorMessage
 			);
 
 			console.error(
-				"Full Error:",
-				error
+				"API Error:",
+				apiError
 			);
 
 			console.error(
-				"==================================\n"
+				"======================================"
 			);
 
 
-			/* =========================================
-			   USER ERROR MESSAGE
-			========================================= */
+			/* =====================================
+			   USER-FRIENDLY ERROR
+			===================================== */
 
-			let errorText =
-				"❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥\n\n";
+			if (status === 400) {
 
-			const status =
-				error?.status ||
-				error?.code;
+				return message.reply(
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+
+⚠️ Bad request.
+
+🔎 ${errorMessage}`
+				);
+			}
 
 
 			if (status === 401) {
 
-				errorText +=
-					"🔑 Invalid Gemini API key.";
+				return message.reply(
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
-			} else if (status === 403) {
-
-				errorText +=
-					"🚫 Gemini API access denied.";
-
-			} else if (status === 404) {
-
-				errorText +=
-					"🔎 Gemini model was not found.";
-
-			} else if (status === 429) {
-
-				errorText +=
-					"⚡ API quota/rate limit reached.";
-
-			} else {
-
-				errorText +=
-					"⚠️ Gemini API request failed.\n\n" +
-					"Please check the Railway logs.";
+🔑 API key is invalid or unauthorized.`
+				);
 			}
 
 
-			return message.reply(errorText);
+			if (status === 403) {
+
+				return message.reply(
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+
+🚫 API access is forbidden.
+
+Check whether your Gemini API key/project has access to the Gemini API.`
+				);
+			}
+
+
+			if (status === 404) {
+
+				return message.reply(
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+
+🔎 Gemini model or endpoint was not found.`
+				);
+			}
+
+
+			if (status === 429) {
+
+				return message.reply(
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+
+⚡ Gemini API quota or rate limit reached.
+
+Please try again later.`
+				);
+			}
+
+
+			return message.reply(
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
+
+⚠️ Gemini API request failed.
+
+🔎 ${errorMessage}`
+			);
 		}
 	}
 };
