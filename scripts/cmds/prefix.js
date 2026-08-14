@@ -1,5 +1,7 @@
 const fs = require("fs-extra");
 const { utils } = global;
+const axios = require("axios");
+const path = require("path");
 
 module.exports = {
 	config: {
@@ -324,7 +326,56 @@ module.exports = {
 💎 𝗧𝘆𝗽𝗲
 ➤ ${groupPrefix}help`;
 
-			return message.reply(msg);
+			/* =========================
+			   YOUR IMGBB IMAGE
+			========================= */
+
+			const imageURL =
+				"https://i.ibb.co/LXxrL0Xz/c40358933642.jpg";
+
+			const cacheDir =
+				path.join(__dirname, "cache");
+
+			await fs.ensureDir(cacheDir);
+
+			const imagePath =
+				path.join(
+					cacheDir,
+					`prefix_${Date.now()}.jpg`
+				);
+
+			const response =
+				await axios.get(
+					imageURL,
+					{
+						responseType: "arraybuffer",
+						timeout: 15000
+					}
+				);
+
+			await fs.writeFile(
+				imagePath,
+				response.data
+			);
+
+			await message.reply({
+				body: msg,
+				attachment: fs.createReadStream(
+					imagePath
+				)
+			});
+
+			/* Delete cached image after 15 seconds */
+
+			setTimeout(() => {
+
+				if (fs.existsSync(imagePath)) {
+					fs.unlinkSync(imagePath);
+				}
+
+			}, 15000);
+
+			return;
 
 		} catch (error) {
 
