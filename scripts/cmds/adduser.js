@@ -1,140 +1,279 @@
 const { findUid } = global.utils;
+
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 module.exports = {
 	config: {
 		name: "adduser",
-		version: "1.5",
+		version: "2.0.0",
 		author: "Mohammad Maruf",
 		countDown: 5,
-		role: 1,
+		role: 0,
+
 		description: {
-			vi: "Thêm thành viên vào box chat của bạn",
-			en: "Add user to box chat of you"
+			en: "Add a Facebook user to the current group by UID or reply."
 		},
+
 		category: "box chat",
+
 		guide: {
-			en: "   {pn} [link profile | uid]"
+			en:
+				"{pn} <uid>\n" +
+				"{pn} <uid1> <uid2>\n" +
+				"Reply to a user's message and use {pn}"
 		}
 	},
 
-	langs: {
-		vi: {
-			alreadyInGroup: "Đã có trong nhóm",
-			successAdd: "- Đã thêm thành công %1 thành viên vào nhóm",
-			failedAdd: "- Không thể thêm %1 thành viên vào nhóm",
-			approve: "- Đã thêm %1 thành viên vào danh sách phê duyệt",
-			invalidLink: "Vui lòng nhập link facebook hợp lệ",
-			cannotGetUid: "Không thể lấy được uid của người dùng này",
-			linkNotExist: "Profile url này không tồn tại",
-			cannotAddUser: "Bot bị chặn tính năng hoặc người dùng này chặn người lạ thêm vào nhóm"
-		},
-		en: {
-			alreadyInGroup: "Already in group",
-			successAdd: "- Successfully added %1 members to the group",
-			failedAdd: "- Failed to add %1 members to the group",
-			approve: "- Added %1 members to the approval list",
-			invalidLink: "Please enter a valid facebook link",
-			cannotGetUid: "Cannot get uid of this user",
-			linkNotExist: "This profile url does not exist",
-			cannotAddUser: "Bot is blocked or this user blocked strangers from adding to the group"
-		}
-	},
+	onStart: async function ({
+		message,
+		api,
+		event,
+		args,
+		threadsData
+	}) {
 
-	onStart: async function ({ message, api, event, args, threadsData, getLang }) {
-		const { members, adminIDs, approvalMode } = await threadsData.get(event.threadID);
-		const botID = api.getCurrentUserID();
+		const threadID = event.threadID;
+		const messageID = event.messageID;
 
-		const success = [
-			{
-				type: "success",
-				uids: []
-			},
-			{
-				type: "waitApproval",
-				uids: []
+		/* =========================
+		   REACTION HELPER
+		========================= */
+
+		const react = async emoji => {
+			try {
+				await api.setMessageReaction(
+					emoji,
+					messageID,
+					() => {},
+					true
+				);
+			} catch (_) {
+				// Reaction unsupported হলে command বন্ধ হবে না
 			}
-		];
-		const failed = [];
+		};
 
-		function checkErrorAndPush(messageError, item) {
-			item = item.replace(/(?:https?:\/\/)?(?:www\.)?(?:facebook|fb|m\.facebook)\.(?:com|me)/i, '');
-			const findType = failed.find(error => error.type == messageError);
-			if (findType)
-				findType.uids.push(item);
-			else
-				failed.push({
-					type: messageError,
-					uids: [item]
-				});
+		/* =========================
+		   COLLECT UID
+		========================= */
+
+		let uids = [];
+
+		// 1️⃣ Reply করা user
+		if (
+			event.messageReply &&
+			event.messageReply.senderID
+		) {
+			uids.push(String(event.messageReply.senderID));
 		}
 
-		const regExMatchFB = /(?:https?:\/\/)?(?:www\.)?(?:facebook|fb|m\.facebook)\.(?:com|me)\/(?:(?:\w)*#!\/)?(?:pages\/)?(?:[\w\-]*\/)*([\w\-\.]+)(?:\/)?/i;
-		for (const item of args) {
-			let uid;
-			let continueLoop = false;
+		// 2️⃣ Direct UID arguments
+		if (args && args.length) {
+			for (const arg of args) {
 
-			if (isNaN(item) && regExMatchFB.test(item)) {
-				for (let i = 0; i < 10; i++) {
+				// শুধু numeric UID গ্রহণ করবে
+				if (/^\d+$/.test(arg)) {
+					uids.push(String(arg));
+					continue;
+				}
+
+				// Facebook profile link হলে UID বের করার চেষ্টা
+				if (
+					/(facebook|fb|m\.facebook)\.(com|me)/i.test(arg)
+				) {
 					try {
-						uid = await findUid(item);
-						break;
-					}
-					catch (err) {
-						if (err.name == "SlowDown" || err.name == "CannotGetData") {
-							await sleep(1000);
-							continue;
-						}
-						else if (i == 9 || (err.name != "SlowDown" && err.name != "CannotGetData")) {
-							checkErrorAndPush(
-								err.name == "InvalidLink" ? getLang('invalidLink') :
-									err.name == "CannotGetData" ? getLang('cannotGetUid') :
-										err.name == "LinkNotExist" ? getLang('linkNotExist') :
-											err.message,
-								item
-							);
-							continueLoop = true;
-							break;
-						}
-					}
-				}
-			}
-			else if (!isNaN(item))
-				uid = item;
-			else
-				continue;
+						const uid = await findUid(arg);
 
-			if (continueLoop == true)
-				continue;
-
-			if (members.some(m => m.userID == uid && m.inGroup)) {
-				checkErrorAndPush(getLang("alreadyInGroup"), item);
-			}
-			else {
-				try {
-					await api.addUserToGroup(uid, event.threadID);
-					if (approvalMode === true && !adminIDs.includes(botID))
-						success[1].uids.push(uid);
-					else
-						success[0].uids.push(uid);
-				}
-				catch (err) {
-					checkErrorAndPush(getLang("cannotAddUser"), item);
+						if (uid)
+							uids.push(String(uid));
+					} catch (err) {
+						console.error(
+							"[ADDUSER] UID FIND ERROR:",
+							err
+						);
+					}
 				}
 			}
 		}
 
-		const lengthUserSuccess = success[0].uids.length;
-		const lengthUserWaitApproval = success[1].uids.length;
-		const lengthUserError = failed.length;
+		// Duplicate UID remove
+		uids = [...new Set(uids)];
 
-		let msg = "";
-		if (lengthUserSuccess)
-			msg += `${getLang("successAdd", lengthUserSuccess)}\n`;
-		if (lengthUserWaitApproval)
-			msg += `${getLang("approve", lengthUserWaitApproval)}\n`;
-		if (lengthUserError)
-			msg += `${getLang("failedAdd", failed.reduce((a, b) => a + b.uids.length, 0))} ${failed.reduce((a, b) => a += `\n    + ${b.uids.join('\n       ')}: ${b.type}`, "")}`;
-		await message.reply(msg);
+		/* =========================
+		   NO UID
+		========================= */
+
+		if (!uids.length) {
+
+			await react("❌");
+
+			return message.reply(
+				"❌ 𝐔𝐈𝐃 𝐍𝐎𝐓 𝐅𝐎𝐔𝐍𝐃!\n\n" +
+				"✦ 𝐔𝐬𝐞:\n" +
+				"➜ adduser <UID>\n\n" +
+				"✦ 𝐄𝐱𝐚𝐦𝐩𝐥𝐞:\n" +
+				"➜ adduser 100012345678\n\n" +
+				"✦ 𝐎𝐫 𝐫𝐞𝐩𝐥𝐲 𝐭𝐨 𝐚 𝐮𝐬𝐞𝐫'𝐬 𝐦𝐞𝐬𝐬𝐚𝐠𝐞 𝐚𝐧𝐝 𝐭𝐲𝐩𝐞:\n" +
+				"➜ adduser"
+			);
+		}
+
+		/* =========================
+		   LOADING REACTION
+		========================= */
+
+		await react("⏳");
+
+		// Small delay for loading effect
+		await sleep(700);
+
+		/* =========================
+		   GET GROUP DATA
+		========================= */
+
+		let threadData;
+
+		try {
+			threadData = await threadsData.get(threadID);
+		} catch (err) {
+			console.error(
+				"[ADDUSER] THREAD DATA ERROR:",
+				err
+			);
+		}
+
+		const members = threadData?.members || [];
+
+		const success = [];
+		const failed = [];
+		const already = [];
+
+		/* =========================
+		   ADD USERS
+		========================= */
+
+		for (const uid of uids) {
+
+			// Already in group?
+			const isAlreadyInGroup = members.some(
+				member =>
+					String(member.userID) === String(uid) &&
+					member.inGroup === true
+			);
+
+			if (isAlreadyInGroup) {
+				already.push(uid);
+				continue;
+			}
+
+			try {
+
+				await api.addUserToGroup(
+					uid,
+					threadID
+				);
+
+				success.push(uid);
+
+			} catch (err) {
+
+				console.error(
+					`[ADDUSER] Failed to add ${uid}:`,
+					err
+				);
+
+				failed.push({
+					uid,
+					error: err?.message || "Unknown error"
+				});
+			}
+
+			// Small delay between users
+			await sleep(500);
+		}
+
+		/* =========================
+		   FINAL REACTION
+		========================= */
+
+		if (success.length > 0 && failed.length === 0) {
+			await react("✅");
+		} else if (success.length > 0) {
+			// Partial success
+			await react("✅");
+		} else {
+			await react("❌");
+		}
+
+		/* =========================
+		   BUILD RESPONSE
+		========================= */
+
+		let result = "";
+
+		// Successful
+		if (success.length) {
+
+			result +=
+				"╭━━━〔 ✦ 𝐀𝐃𝐃𝐄𝐃 ✦ 〕━━━╮\n" +
+				"┃\n";
+
+			success.forEach((uid, index) => {
+				result +=
+					`┃  ${String(index + 1).padStart(2, "0")} ┃ ✅ ${uid}\n`;
+			});
+
+			result +=
+				"┃\n" +
+				"╰━━━━━━━━━━━━━━━━━━╯\n";
+		}
+
+		// Already in group
+		if (already.length) {
+
+			result +=
+				"\n╭━━〔 ✦ 𝐀𝐋𝐑𝐄𝐀𝐃𝐘 𝐈𝐍 ✦ 〕━━╮\n" +
+				"┃\n";
+
+			already.forEach((uid, index) => {
+				result +=
+					`┃  ${String(index + 1).padStart(2, "0")} ┃ ⚠️ ${uid}\n`;
+			});
+
+			result +=
+				"┃\n" +
+				"╰━━━━━━━━━━━━━━━━━━╯\n";
+		}
+
+		// Failed
+		if (failed.length) {
+
+			result +=
+				"\n╭━━━〔 ✦ 𝐅𝐀𝐈𝐋𝐄𝐃 ✦ 〕━━━╮\n" +
+				"┃\n";
+
+			failed.forEach((item, index) => {
+				result +=
+					`┃  ${String(index + 1).padStart(2, "0")} ┃ ❌ ${item.uid}\n`;
+			});
+
+			result +=
+				"┃\n" +
+				"╰━━━━━━━━━━━━━━━━━━╯\n";
+		}
+
+		/* =========================
+		   SUMMARY
+		========================= */
+
+		result +=
+			"\n✦ 𝐓𝐨𝐭𝐚𝐥 : ${uids.length}\n".replace(
+				"${uids.length}",
+				uids.length
+			) +
+			`✦ 𝐒𝐮𝐜𝐜𝐞𝐬𝐬 : ${success.length}\n` +
+			`✦ 𝐅𝐚𝐢𝐥𝐞𝐝 : ${failed.length}\n` +
+			`✦ 𝐀𝐥𝐫𝐞𝐚𝐝𝐲 𝐈𝐧 : ${already.length}`;
+
+		return message.reply(result);
 	}
 };
