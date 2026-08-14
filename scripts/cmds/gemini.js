@@ -1,6 +1,15 @@
 const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
+const TEXT_MODEL = "gemini-3.6-flash";
+const IMAGE_MODEL = "gemini-3.1-flash-image";
 const MAX_MESSAGE_LENGTH = 19000;
+
+
+/* =========================================
+   SPLIT LONG TEXT
+========================================= */
 
 function splitMessage(text, maxLength = MAX_MESSAGE_LENGTH) {
 	const chunks = [];
@@ -14,10 +23,36 @@ function splitMessage(text, maxLength = MAX_MESSAGE_LENGTH) {
 	return chunks;
 }
 
-async function getGeminiResponse(question, API_KEY, model) {
+
+/* =========================================
+   GET QUESTION
+========================================= */
+
+function getQuestion(event, args) {
+
+	let question = args.join(" ").trim();
+
+	if (
+		!question &&
+		event.messageReply &&
+		event.messageReply.body
+	) {
+		question =
+			event.messageReply.body.trim();
+	}
+
+	return question;
+}
+
+
+/* =========================================
+   TEXT GEMINI
+========================================= */
+
+async function askGemini(question, API_KEY) {
 
 	const url =
-		`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+		`https://generativelanguage.googleapis.com/v1beta/models/${TEXT_MODEL}:generateContent`;
 
 	const response = await axios.post(
 		url,
@@ -61,11 +96,8 @@ async function getGeminiResponse(question, API_KEY, model) {
 		}
 	);
 
-	const candidates =
-		response?.data?.candidates || [];
-
 	const parts =
-		candidates[0]?.content?.parts || [];
+		response?.data?.candidates?.[0]?.content?.parts || [];
 
 	const answer =
 		parts
@@ -75,7 +107,6 @@ async function getGeminiResponse(question, API_KEY, model) {
 
 	if (!answer) {
 		throw new Error(
-			candidates[0]?.finishReason ||
 			"Gemini returned an empty response."
 		);
 	}
@@ -84,31 +115,248 @@ async function getGeminiResponse(question, API_KEY, model) {
 }
 
 
+/* =========================================
+   DOWNLOAD REPLIED IMAGE
+========================================= */
+
+async function downloadImage(url) {
+
+	const response = await axios.get(
+		url,
+		{
+			responseType: "arraybuffer",
+			timeout: 60000
+		}
+	);
+
+	const contentType =
+		response.headers["content-type"] ||
+		"image/jpeg";
+
+	let extension = ".jpg";
+
+	if (contentType.includes("png")) {
+		extension = ".png";
+	} else if (contentType.includes("webp")) {
+		extension = ".webp";
+	} else if (contentType.includes("gif")) {
+		extension = ".gif";
+	}
+
+	const tempDir =
+		path.join(__dirname, "cache");
+
+	await fs.ensureDir(tempDir);
+
+	const filePath =
+		path.join(
+			tempDir,
+			`gemini_${Date.now()}${extension}`
+		);
+
+	await fs.writeFile(
+		filePath,
+		Buffer.from(response.data)
+	);
+
+	return {
+		filePath,
+		buffer: Buffer.from(response.data),
+		mimeType: contentType
+	};
+}
+
+
+/* =========================================
+   GEMINI IMAGE
+========================================= */
+
+async function generateImage({
+	prompt,
+	API_KEY,
+	imageData = null,
+	mimeType = null
+}) {
+
+	const input = [];
+
+	/* Text prompt */
+
+	input.push({
+		type: "text",
+		text: prompt
+	});
+
+
+	/* Replied image */
+
+	if (imageData) {
+
+		input.push({
+			type: "image",
+			mime_type: mimeType || "image/jpeg",
+			data: imageData.toString("base64")
+		});
+	}
+
+
+	const response =
+		await axios.post(
+
+			"https://generativelanguage.googleapis.com/v1beta/interactions",
+
+			{
+				model: IMAGE_MODEL,
+
+				input,
+
+				response_format: {
+					type: "image",
+					mime_type: "image/png",
+					aspect_ratio: "1:1",
+					image_size: "1K"
+				}
+			},
+
+			{
+				headers: {
+					"x-goog-api-key": API_KEY,
+					"Content-Type": "application/json"
+				},
+
+				timeout: 120000
+			}
+		);
+
+
+	/* =====================================
+	   GET GENERATED IMAGE
+	===================================== */
+
+	const outputImage =
+		response?.data?.output_image;
+
+
+	if (
+		!outputImage ||
+		!outputImage.data
+	) {
+
+		throw new Error(
+			"Gemini did not return an image."
+		);
+	}
+
+
+	return Buffer.from(
+		outputImage.data,
+		"base64"
+	);
+}
+
+
+/* =========================================
+   SEND GENERATED IMAGE
+========================================= */
+
+async function sendImage(
+	api,
+	threadID,
+	messageID,
+	imageBuffer
+) {
+
+	const tempDir =
+		path.join(__dirname, "cache");
+
+	await fs.ensureDir(tempDir);
+
+	const filePath =
+		path.join(
+			tempDir,
+			`gemini_result_${Date.now()}.png`
+		);
+
+	await fs.writeFile(
+		filePath,
+		imageBuffer
+	);
+
+	try {
+
+		await api.sendMessage(
+			{
+				attachment:
+					fs.createReadStream(filePath)
+			},
+			threadID,
+			messageID
+		);
+
+	} finally {
+
+		setTimeout(
+			() => {
+
+				try {
+
+					if (
+						fs.existsSync(filePath)
+					) {
+						fs.unlinkSync(filePath);
+					}
+
+				} catch (_) {}
+
+			},
+			10000
+		);
+	}
+}
+
+
+/* =========================================
+   COMMAND
+========================================= */
+
 module.exports = {
 
 	config: {
+
 		name: "gemini",
-		aliases: ["g"],
+
+		aliases: [
+			"g"
+		],
+
 		version: "1.0.0",
-		author: "Mohammad Maruf",
+
+		author:
+			"Mohammad Maruf",
+
 		countDown: 5,
+
 		role: 0,
 
-		description: {
-			en: "Chat with Google Gemini AI."
-		},
-
 		category: "AI",
+
+		description: {
+			en:
+				"Chat with Gemini and generate/edit images."
+		},
 
 		guide: {
 			en:
 				"{pn} <question>\n" +
-				"Example: {pn} Hello\n\n" +
-				"Reply to a message with {pn}.\n\n" +
-				"You can also use: g"
+				"{pn} image <prompt>\n" +
+				"Reply to an image with {pn} image <instruction>"
 		}
 	},
 
+
+	/* =========================================
+	   ON START
+	========================================= */
 
 	onStart: async function ({
 		api,
@@ -118,29 +366,18 @@ module.exports = {
 	}) {
 
 		/* =====================================
-		   🔑 GEMINI API KEY
-		   👉 ONLY CHANGE THIS LINE
+		   🔑 API KEY
+		   👉 ONLY CHANGE THIS
 		===================================== */
 
 		const API_KEY =
 			"AQ.Ab8RN6I64l8bnJeL1XAjiyMpRN1V1B-_CG_08s-cJeYRZdOiNQ";
 
 
-		/* =====================================
-		   🤖 GEMINI MODEL
-		===================================== */
-
-		const model =
-			"gemini-3.6-flash";
-
-
-		/* =====================================
-		   🔐 CHECK API KEY
-		===================================== */
-
 		if (
 			!API_KEY ||
-			API_KEY === "YOUR_GEMINI_API_KEY_HERE"
+			API_KEY ===
+				"YOUR_GEMINI_API_KEY_HERE"
 		) {
 
 			return message.reply(
@@ -150,31 +387,242 @@ module.exports = {
 
 
 		/* =====================================
-		   💬 GET QUESTION
+		   CHECK IMAGE MODE
 		===================================== */
 
-		let question =
-			args.join(" ").trim();
+		const firstArg =
+			(args[0] || "").toLowerCase();
+
+		const isImageMode =
+			firstArg === "image" ||
+			firstArg === "img" ||
+			firstArg === "photo";
 
 
 		/* =====================================
-		   ↩️ REPLY SUPPORT
+		   🖼️ IMAGE MODE
 		===================================== */
 
-		if (
-			!question &&
-			event.messageReply &&
-			event.messageReply.body
-		) {
+		if (isImageMode) {
 
-			question =
-				event.messageReply.body.trim();
+			const prompt =
+				args
+					.slice(1)
+					.join(" ")
+					.trim();
+
+
+			if (!prompt) {
+
+				return message.reply(
+`🖼️ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗜𝗠𝗔𝗚𝗘
+
+Use:
+
+➜ ${global.GoatBot.config.prefix}g image <prompt>
+
+Example:
+
+➜ ${global.GoatBot.config.prefix}g image a futuristic red gaming logo
+
+💡 Reply to an image with this command to edit it.`
+				);
+			}
+
+
+			let loadingMessage;
+
+			try {
+
+				loadingMessage =
+					await message.reply(
+						"🎨 𝗚𝗲𝗺𝗶𝗻𝗶 𝗶𝘀 𝗰𝗿𝗲𝗮𝘁𝗶𝗻𝗴 𝘆𝗼𝘂𝗿 𝗶𝗺𝗮𝗴𝗲..."
+					);
+
+			} catch (_) {}
+
+
+			const loadingMessageID =
+				loadingMessage?.messageID ||
+				loadingMessage?.messageId;
+
+
+			let repliedImage = null;
+
+			try {
+
+				/* =================================
+				   GET REPLIED IMAGE
+				================================= */
+
+				if (
+					event.messageReply &&
+					event.messageReply.attachments &&
+					event.messageReply.attachments.length
+				) {
+
+					const attachment =
+						event.messageReply.attachments.find(
+							item =>
+								item.type === "photo" ||
+								item.type === "image" ||
+								item.type === "animated_image"
+						);
+
+					if (attachment?.url) {
+
+						repliedImage =
+							await downloadImage(
+								attachment.url
+							);
+					}
+				}
+
+
+				/* =================================
+				   IMAGE PROMPT
+				================================= */
+
+				let finalPrompt =
+					prompt;
+
+				if (repliedImage) {
+
+					finalPrompt =
+						`Edit the provided image according to this instruction:
+
+${prompt}
+
+Preserve important details of the original image unless the instruction specifically asks to change them.`;
+				}
+
+
+				/* =================================
+				   GENERATE IMAGE
+				================================= */
+
+				const imageBuffer =
+					await generateImage({
+
+						prompt:
+							finalPrompt,
+
+						API_KEY,
+
+						imageData:
+							repliedImage?.buffer ||
+							null,
+
+						mimeType:
+							repliedImage?.mimeType ||
+							null
+					});
+
+
+				/* =================================
+				   REMOVE LOADING MESSAGE
+				================================= */
+
+				if (loadingMessageID) {
+
+					try {
+
+						await api.editMessage(
+							"✅ 𝗜𝗺𝗮𝗴𝗲 𝗿𝗲𝗮𝗱𝘆! 🖼️",
+							loadingMessageID
+						);
+
+					} catch (_) {}
+				}
+
+
+				/* =================================
+				   SEND IMAGE
+				================================= */
+
+				await sendImage(
+					api,
+					event.threadID,
+					event.messageID,
+					imageBuffer
+				);
+
+
+				/* =================================
+				   CLEANUP ORIGINAL IMAGE
+				================================= */
+
+				if (
+					repliedImage?.filePath
+				) {
+
+					try {
+
+						await fs.remove(
+							repliedImage.filePath
+						);
+
+					} catch (_) {}
+				}
+
+				return;
+
+			} catch (error) {
+
+				console.error(
+					"Gemini Image Error:",
+					error?.response?.data ||
+					error
+				);
+
+
+				const status =
+					error?.response?.status;
+
+				const apiError =
+					error?.response?.data?.error;
+
+				const errorMessage =
+					apiError?.message ||
+					error?.message ||
+					"Unknown error";
+
+
+				const errorText =
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗜𝗠𝗔𝗚𝗘 𝗘𝗥𝗥𝗢𝗥
+
+📡 Status: ${status || "Unknown"}
+
+🔎 ${errorMessage}`;
+
+
+				if (loadingMessageID) {
+
+					try {
+
+						return await api.editMessage(
+							errorText,
+							loadingMessageID
+						);
+
+					} catch (_) {}
+				}
+
+
+				return message.reply(
+					errorText
+				);
+			}
 		}
 
 
 		/* =====================================
-		   🤖 "G" WITHOUT QUESTION
+		   🤖 NORMAL TEXT MODE
 		===================================== */
+
+		let question =
+			getQuestion(event, args);
+
 
 		if (!question) {
 
@@ -182,10 +630,6 @@ module.exports = {
 				"Say a short friendly greeting to the user and ask how you can help today.";
 		}
 
-
-		/* =====================================
-		   ⏳ LOADING MESSAGE
-		===================================== */
 
 		let loadingMessage;
 
@@ -196,17 +640,8 @@ module.exports = {
 					"⏳ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
 				);
 
-		} catch (error) {
+		} catch (_) {}
 
-			return message.reply(
-				"❌ Failed to send loading message."
-			);
-		}
-
-
-		/* =====================================
-		   GET MESSAGE ID
-		===================================== */
 
 		const loadingMessageID =
 			loadingMessage?.messageID ||
@@ -215,36 +650,26 @@ module.exports = {
 
 		try {
 
-			/* =====================================
-			   🚀 GEMINI REQUEST
-			===================================== */
-
 			const answer =
-				await getGeminiResponse(
+				await askGemini(
 					question,
-					API_KEY,
-					model
+					API_KEY
 				);
 
-
-			/* =====================================
-			   📦 SPLIT LONG RESPONSE
-			===================================== */
 
 			const chunks =
 				splitMessage(answer);
 
-
-			/* =====================================
-			   🤖 FIRST RESPONSE
-			   EDIT LOADING MESSAGE
-			===================================== */
 
 			const firstMessage =
 `🤖 𝗚𝗘𝗠𝗜𝗡𝗜
 
 ${chunks[0]}`;
 
+
+			/* =================================
+			   EDIT LOADING MESSAGE
+			================================= */
 
 			if (loadingMessageID) {
 
@@ -255,12 +680,7 @@ ${chunks[0]}`;
 						loadingMessageID
 					);
 
-				} catch (editError) {
-
-					console.error(
-						"Gemini edit error:",
-						editError
-					);
+				} catch (_) {
 
 					await message.reply(
 						firstMessage
@@ -275,9 +695,9 @@ ${chunks[0]}`;
 			}
 
 
-			/* =====================================
-			   📚 LONG RESPONSE
-			===================================== */
+			/* =================================
+			   LONG RESPONSE
+			================================= */
 
 			for (
 				let i = 1;
@@ -292,12 +712,7 @@ ${chunks[i]}`
 				);
 			}
 
-
 		} catch (error) {
-
-			/* =====================================
-			   ERROR INFORMATION
-			===================================== */
 
 			const status =
 				error?.response?.status;
@@ -311,93 +726,13 @@ ${chunks[i]}`
 				"Unknown error";
 
 
-			console.error(
-				"========== GEMINI ERROR =========="
-			);
-
-			console.error(
-				"Model:",
-				model
-			);
-
-			console.error(
-				"Status:",
-				status
-			);
-
-			console.error(
-				"Message:",
-				errorMessage
-			);
-
-			console.error(
-				"API Response:",
-				error?.response?.data ||
-				"No response data"
-			);
-
-			console.error(
-				"=================================="
-			);
-
-
-			/* =====================================
-			   ❌ ERROR MESSAGE
-			===================================== */
-
-			let errorText =
-				"❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥\n\n";
-
-
-			if (status === 400) {
-
-				errorText +=
-`⚠️ Bad request.
-
-🔎 ${errorMessage}`;
-
-			} else if (status === 401) {
-
-				errorText +=
-					"🔑 Invalid Gemini API key.";
-
-			} else if (status === 403) {
-
-				errorText +=
-`🚫 Gemini API access denied.
-
-🔎 ${errorMessage}`;
-
-			} else if (status === 404) {
-
-				errorText +=
-`🔎 Model not found.
-
-🤖 Model: ${model}
-
-🔎 ${errorMessage}`;
-
-			} else if (status === 429) {
-
-				errorText +=
-`⚡ Gemini API quota or rate limit reached.
-
-🔎 ${errorMessage}`;
-
-			} else {
-
-				errorText +=
-`⚠️ Gemini API request failed.
+			const errorText =
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
 📡 Status: ${status || "Unknown"}
 
 🔎 ${errorMessage}`;
-			}
 
-
-			/* =====================================
-			   ✏️ EDIT LOADING MESSAGE
-			===================================== */
 
 			if (loadingMessageID) {
 
@@ -408,13 +743,7 @@ ${chunks[i]}`
 						loadingMessageID
 					);
 
-				} catch (editError) {
-
-					console.error(
-						"Gemini error edit failed:",
-						editError
-					);
-				}
+				} catch (_) {}
 			}
 
 
@@ -425,10 +754,9 @@ ${chunks[i]}`
 	},
 
 
-	/* =====================================
+	/* =========================================
 	   💬 BARE "g" SUPPORT
-	   Example: g
-	===================================== */
+	========================================= */
 
 	onChat: async function ({
 		api,
@@ -444,21 +772,14 @@ ${chunks[i]}`
 		}
 
 
-		/* =====================================
-		   🔑 API KEY
-		===================================== */
-
 		const API_KEY =
 			"YOUR_GEMINI_API_KEY_HERE";
 
 
-		const model =
-			"gemini-3.6-flash";
-
-
 		if (
 			!API_KEY ||
-			API_KEY === "YOUR_GEMINI_API_KEY_HERE"
+			API_KEY ===
+				"YOUR_GEMINI_API_KEY_HERE"
 		) {
 
 			return message.reply(
@@ -466,10 +787,6 @@ ${chunks[i]}`
 			);
 		}
 
-
-		/* =====================================
-		   REPLY QUESTION
-		===================================== */
 
 		let question = "";
 
@@ -490,10 +807,6 @@ ${chunks[i]}`
 		}
 
 
-		/* =====================================
-		   ⏳ LOADING
-		===================================== */
-
 		let loadingMessage;
 
 		try {
@@ -503,10 +816,7 @@ ${chunks[i]}`
 					"⏳ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗶𝘀 𝘁𝗵𝗶𝗻𝗸𝗶𝗻𝗴..."
 				);
 
-		} catch (error) {
-
-			return;
-		}
+		} catch (_) {}
 
 
 		const loadingMessageID =
@@ -517,10 +827,9 @@ ${chunks[i]}`
 		try {
 
 			const answer =
-				await getGeminiResponse(
+				await askGemini(
 					question,
-					API_KEY,
-					model
+					API_KEY
 				);
 
 
@@ -543,7 +852,7 @@ ${chunks[0]}`;
 						loadingMessageID
 					);
 
-				} catch (error) {
+				} catch (_) {
 
 					await message.reply(
 						firstMessage
@@ -558,10 +867,6 @@ ${chunks[0]}`;
 			}
 
 
-			/* =====================================
-			   LONG RESPONSE
-			===================================== */
-
 			for (
 				let i = 1;
 				i < chunks.length;
@@ -574,7 +879,6 @@ ${chunks[0]}`;
 ${chunks[i]}`
 				);
 			}
-
 
 		} catch (error) {
 
@@ -590,54 +894,12 @@ ${chunks[i]}`
 				"Unknown error";
 
 
-			let errorText =
-				"❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥\n\n";
-
-
-			if (status === 400) {
-
-				errorText +=
-`⚠️ Bad request.
-
-🔎 ${errorMessage}`;
-
-			} else if (status === 401) {
-
-				errorText +=
-					"🔑 Invalid Gemini API key.";
-
-			} else if (status === 403) {
-
-				errorText +=
-`🚫 Gemini API access denied.
-
-🔎 ${errorMessage}`;
-
-			} else if (status === 404) {
-
-				errorText +=
-`🔎 Model not found.
-
-🤖 Model: ${model}
-
-🔎 ${errorMessage}`;
-
-			} else if (status === 429) {
-
-				errorText +=
-`⚡ Gemini API quota or rate limit reached.
-
-🔎 ${errorMessage}`;
-
-			} else {
-
-				errorText +=
-`⚠️ Gemini API request failed.
+			const errorText =
+`❌ 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥
 
 📡 Status: ${status || "Unknown"}
 
 🔎 ${errorMessage}`;
-			}
 
 
 			if (loadingMessageID) {
@@ -649,13 +911,7 @@ ${chunks[i]}`
 						loadingMessageID
 					);
 
-				} catch (editError) {
-
-					console.error(
-						"Gemini error edit failed:",
-						editError
-					);
-				}
+				} catch (_) {}
 			}
 
 
