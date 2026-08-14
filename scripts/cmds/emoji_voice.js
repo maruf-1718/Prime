@@ -102,7 +102,7 @@ longDescription: "One emoji triggers multiple voices, sent randomly 😘",
       });
     } catch (error) {
       console.error(error);
-      message.reply("ইমোজি দিয়ে লাভ নাই 😃\nযাও ভালো মুন্সী দেখো গা জান 💋");
+      message.reply("ইমোজি দিয়ে লাভ নাই 🤣\nযাও ভালো মুন্সী দেখো গা জান 💋");
     }
   }
 };
