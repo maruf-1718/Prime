@@ -17,7 +17,7 @@ const GITHUB_TOKEN =
   process.env.GITHUB_TOKEN || "";
 
 /* =========================================================
-   RANDOM CAPTIONS
+   CAPTIONS
 ========================================================= */
 
 const CAPTIONS = [
@@ -53,9 +53,7 @@ const CAPTIONS = [
 
 function loadData() {
   try {
-
     if (!fs.existsSync(DATA_FILE)) {
-
       fs.writeFileSync(
         DATA_FILE,
         JSON.stringify(
@@ -68,18 +66,16 @@ function loadData() {
       return [];
     }
 
-    const raw =
-      fs.readFileSync(
-        DATA_FILE,
-        "utf8"
-      );
+    const raw = fs.readFileSync(
+      DATA_FILE,
+      "utf8"
+    );
 
     if (!raw.trim()) {
       return [];
     }
 
-    const data =
-      JSON.parse(raw);
+    const data = JSON.parse(raw);
 
     if (Array.isArray(data)) {
       return data;
@@ -95,7 +91,6 @@ function loadData() {
     return [];
 
   } catch (error) {
-
     console.error(
       "[MMC] DATA LOAD ERROR:",
       error.message
@@ -112,7 +107,6 @@ let VIDEOS = loadData();
 ========================================================= */
 
 function saveData() {
-
   fs.writeFileSync(
     DATA_FILE,
     JSON.stringify(
@@ -134,16 +128,13 @@ async function react(
   messageID,
   emoji
 ) {
-
   try {
-
     await api.setMessageReaction(
       emoji,
       messageID,
       () => {},
       true
     );
-
   } catch {}
 }
 
@@ -152,7 +143,6 @@ async function react(
 ========================================================= */
 
 function isBotAdmin(event) {
-
   const userID =
     String(event.senderID);
 
@@ -169,11 +159,9 @@ function isBotAdmin(event) {
 ========================================================= */
 
 function getRandomCaption() {
-
   return CAPTIONS[
     Math.floor(
-      Math.random() *
-      CAPTIONS.length
+      Math.random() * CAPTIONS.length
     )
   ];
 }
@@ -183,7 +171,6 @@ function getRandomCaption() {
 ========================================================= */
 
 function normalizeUrl(url) {
-
   return String(url)
     .trim()
     .replace(/\s+/g, "");
@@ -194,7 +181,6 @@ function normalizeUrl(url) {
 ========================================================= */
 
 function isDuplicateVideo(url) {
-
   const normalized =
     normalizeUrl(url);
 
@@ -212,9 +198,8 @@ function isDuplicateVideo(url) {
 async function commitToGitHub() {
 
   if (!GITHUB_TOKEN) {
-
     throw new Error(
-      "GITHUB_TOKEN is missing from Railway Variables."
+      "GITHUB_TOKEN is missing."
     );
   }
 
@@ -225,7 +210,6 @@ async function commitToGitHub() {
     `${GITHUB_FILE_PATH}`;
 
   const headers = {
-
     Authorization:
       `Bearer ${GITHUB_TOKEN}`,
 
@@ -242,7 +226,7 @@ async function commitToGitHub() {
   let sha = null;
 
   /* =======================================================
-     GET CURRENT FILE
+     GET EXISTING FILE
   ======================================================= */
 
   try {
@@ -255,7 +239,7 @@ async function commitToGitHub() {
           params: {
             ref: GITHUB_BRANCH
           },
-          timeout: 15000
+          timeout: 10000
         }
       );
 
@@ -280,7 +264,7 @@ async function commitToGitHub() {
   }
 
   /* =======================================================
-     JSON CONTENT
+     FILE CONTENT
   ======================================================= */
 
   const content =
@@ -299,13 +283,12 @@ async function commitToGitHub() {
     ).toString("base64");
 
   /* =======================================================
-     UPDATE BODY
+     UPDATE
   ======================================================= */
 
   const body = {
-
     message:
-      `mmc: update video list (${VIDEOS.length} total)`,
+      `mmc: update videos (${VIDEOS.length})`,
 
     content:
       encoded,
@@ -318,10 +301,6 @@ async function commitToGitHub() {
     body.sha = sha;
   }
 
-  /* =======================================================
-     PUT FILE
-  ======================================================= */
-
   try {
 
     await axios.put(
@@ -329,7 +308,7 @@ async function commitToGitHub() {
       body,
       {
         headers,
-        timeout: 20000
+        timeout: 15000
       }
     );
 
@@ -359,18 +338,18 @@ async function sendVideo(
 
   try {
 
-    /*
-     * Catbox / direct video URL
-     */
     const response =
       await axios.get(
         url,
         {
-          responseType: "stream",
+          responseType:
+            "stream",
 
-          timeout: 20000,
+          timeout:
+            10000,
 
-          maxRedirects: 5,
+          maxRedirects:
+            3,
 
           headers: {
             "User-Agent":
@@ -380,7 +359,6 @@ async function sendVideo(
       );
 
     await message.reply({
-
       body:
         getRandomCaption(),
 
@@ -402,7 +380,7 @@ async function sendVideo(
 }
 
 /* =========================================================
-   SEND RANDOM VIDEO
+   RANDOM VIDEO
 ========================================================= */
 
 async function sendRandomVideo(
@@ -422,6 +400,9 @@ async function sendRandomVideo(
     return;
   }
 
+  /*
+   * Loading reaction
+   */
   await react(
     api,
     event.messageID,
@@ -440,6 +421,9 @@ async function sendRandomVideo(
       VIDEOS[randomIndex]
     );
 
+  /*
+   * Success / Error
+   */
   await react(
     api,
     event.messageID,
@@ -450,7 +434,7 @@ async function sendRandomVideo(
 }
 
 /* =========================================================
-   SEND SERIAL VIDEO
+   SERIAL VIDEO
 ========================================================= */
 
 async function sendSerialVideo(
@@ -566,7 +550,9 @@ module.exports = {
 
     /* =====================================================
        NORMAL MMC
+
        /mmc
+       সবাই ব্যবহার করতে পারবে
     ===================================================== */
 
     if (lower === "") {
@@ -580,7 +566,7 @@ module.exports = {
 
     /* =====================================================
        MMC INFO
-       শুধু ADMIN
+       ADMIN ONLY
     ===================================================== */
 
     if (lower === "info") {
@@ -633,12 +619,14 @@ module.exports = {
         "🪽"
       );
 
-      return message.reply(text);
+      return message.reply(
+        text
+      );
     }
 
     /* =====================================================
        MMC ADD
-       শুধু ADMIN
+       ADMIN ONLY
     ===================================================== */
 
     if (lower === "add") {
@@ -685,8 +673,7 @@ module.exports = {
 
     /* =====================================================
        MMC DELETE
-       mmc delete 1
-       শুধু ADMIN
+       ADMIN ONLY
     ===================================================== */
 
     if (
@@ -725,6 +712,9 @@ module.exports = {
         );
       }
 
+      /*
+       * Delete
+       */
       VIDEOS.splice(
         number - 1,
         1
@@ -736,7 +726,7 @@ module.exports = {
       saveData();
 
       /*
-       * GitHub update
+       * GitHub
        */
       try {
 
@@ -778,9 +768,8 @@ module.exports = {
     }
 
     /* =====================================================
-       SERIAL
-       mmc1 / mmc2 / mmc3
-       শুধু ADMIN
+       MMC1 / MMC2 / MMC3...
+       ADMIN ONLY
     ===================================================== */
 
     if (
@@ -809,14 +798,14 @@ module.exports = {
     }
 
     /*
-     * অন্য কোনো input = silent
+     * Unknown command = silent
      */
     return;
   },
 
   /* =======================================================
      ON REPLY
-  ======================================================= */
+======================================================= */
 
   onReply: async function ({
     api,
@@ -846,7 +835,6 @@ module.exports = {
     /*
      * শুধু Bot Admin
      */
-
     if (!isBotAdmin(event)) {
       return;
     }
@@ -857,7 +845,7 @@ module.exports = {
       );
 
     /* =====================================================
-       INVALID URL
+       INVALID LINK
     ===================================================== */
 
     if (
@@ -902,7 +890,7 @@ module.exports = {
     }
 
     /* =====================================================
-       ADD VIDEO
+       ADD
     ===================================================== */
 
     try {
@@ -910,7 +898,7 @@ module.exports = {
       VIDEOS.push(url);
 
       /*
-       * Local JSON
+       * Local
        */
       saveData();
 
@@ -945,10 +933,6 @@ module.exports = {
         error.message
       );
 
-      /*
-       * GitHub fail হলেও local data থাকবে।
-       */
-
       await react(
         api,
         event.messageID,
@@ -963,79 +947,15 @@ module.exports = {
 
   /* =======================================================
      ON CHAT
-     
-     এটা বিশেষভাবে দরকার কারণ:
-     mmc1 / mmc2 অনেক সময় command parser
-     চিনবে না।
-  ======================================================= */
 
-  onChat: async function ({
-    api,
-    event,
-    message
-  }) {
+     IMPORTANT:
+     এখানে MMC HANDLE করা হচ্ছে না।
 
-    const body =
-      event.body?.trim();
+     কারণ onStart-এ MMC already handle হচ্ছে।
+     এখানে আবার handle করলে duplicate video আসবে।
+======================================================= */
 
-    if (!body) {
-      return;
-    }
-
-    /* =====================================================
-       RAW MMC
-       সবাই ব্যবহার করতে পারবে
-    ===================================================== */
-
-    if (
-      body.toLowerCase() === "mmc"
-    ) {
-
-      return sendRandomVideo(
-        api,
-        event,
-        message
-      );
-    }
-
-    /* =====================================================
-       RAW MMC1 / MMC2 / MMC3
-       শুধু ADMIN
-    ===================================================== */
-
-    if (
-      /^mmc\d+$/i.test(body)
-    ) {
-
-      if (!isBotAdmin(event)) {
-        return;
-      }
-
-      const number =
-        parseInt(
-          body.replace(
-            /^mmc/i,
-            ""
-          ),
-          10
-        );
-
-      return sendSerialVideo(
-        api,
-        event,
-        message,
-        number
-      );
-    }
-
-    /*
-     * info/add/delete এখানে intentionally
-     * handle করা হচ্ছে না।
-     *
-     * এগুলো command parser-এর মাধ্যমে
-     * শুধুমাত্র Bot Admin-এর জন্য চলবে।
-     */
-
+  onChat: async function () {
     return;
   }
 };
