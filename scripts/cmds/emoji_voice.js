@@ -2,13 +2,23 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
-const CONFIG_FILE = global.client?.dirConfig || path.join(__dirname, "config.json");
+const DATA_FILE = path.join(__dirname, "emoji_voice_data.json");
+
+/* =========================================================
+   DEFAULT EMOJI VOICES
+========================================================= */
 
 const DEFAULT_EMOJIS = {
-  "🥱": ["https://files.catbox.moe/9pou40.mp3", "https://files.catbox.moe/60cwcg.mp3"],
+  "🥱": [
+    "https://files.catbox.moe/9pou40.mp3",
+    "https://files.catbox.moe/60cwcg.mp3"
+  ],
   "😁": ["https://files.catbox.moe/60cwcg.mp3"],
   "😌": ["https://files.catbox.moe/epqwbx.mp3"],
-  "🥺": ["https://files.catbox.moe/wc17iq.mp3", "https://files.catbox.moe/dv9why.mp3"],
+  "🥺": [
+    "https://files.catbox.moe/wc17iq.mp3",
+    "https://files.catbox.moe/dv9why.mp3"
+  ],
   "🤭": ["https://files.catbox.moe/cu0mpy.mp3"],
   "😅": ["https://files.catbox.moe/jl3pzb.mp3"],
   "😏": ["https://files.catbox.moe/z9e52r.mp3"],
@@ -18,13 +28,22 @@ const DEFAULT_EMOJIS = {
   "🤔": ["https://files.catbox.moe/hy6m6w.mp3"],
   "🥰": ["https://files.catbox.moe/dv9why.mp3"],
   "🤦": ["https://files.catbox.moe/ivlvoq.mp3"],
-  "😘": ["https://files.catbox.moe/sbws0w.mp3", "https://files.catbox.moe/37dqpx.mp3"],
+  "😘": [
+    "https://files.catbox.moe/sbws0w.mp3",
+    "https://files.catbox.moe/37dqpx.mp3"
+  ],
   "😑": ["https://files.catbox.moe/p78xfw.mp3"],
   "😢": ["https://files.catbox.moe/shxwj1.mp3"],
   "🙊": ["https://files.catbox.moe/3bejxv.mp3"],
   "🤨": ["https://files.catbox.moe/4aci0r.mp3"],
-  "😡": ["https://files.catbox.moe/shxwj1.mp3", "https://files.catbox.moe/h9ekli.mp3"],
-  "🤬": ["https://files.catbox.moe/shxwj1.mp3", "https://files.catbox.moe/h9ekli.mp3"],
+  "😡": [
+    "https://files.catbox.moe/shxwj1.mp3",
+    "https://files.catbox.moe/h9ekli.mp3"
+  ],
+  "🤬": [
+    "https://files.catbox.moe/shxwj1.mp3",
+    "https://files.catbox.moe/h9ekli.mp3"
+  ],
   "🙈": ["https://files.catbox.moe/3qc90y.mp3"],
   "😍": ["https://files.catbox.moe/qjfk1b.mp3"],
   "😭": ["https://files.catbox.moe/itm4g0.mp3"],
@@ -32,17 +51,26 @@ const DEFAULT_EMOJIS = {
   "😻": ["https://files.catbox.moe/y8ul2j.mp3"],
   "😿": ["https://files.catbox.moe/tqxemm.mp3"],
   "💔": ["https://files.catbox.moe/6yanv3.mp3"],
-  "🤣": ["https://files.catbox.moe/2sweut.mp3", "https://files.catbox.moe/jl3pzb.mp3"],
+  "🤣": [
+    "https://files.catbox.moe/2sweut.mp3",
+    "https://files.catbox.moe/jl3pzb.mp3"
+  ],
   "🥹": ["https://files.catbox.moe/jf85xe.mp3"],
   "😩": ["https://files.catbox.moe/b4m5aj.mp3"],
   "🫣": ["https://files.catbox.moe/ttb6hi.mp3"],
-  "🐸": ["https://files.catbox.moe/utl83s.mp3", "https://files.catbox.moe/sg6ugl.mp3"],
+  "🐸": [
+    "https://files.catbox.moe/utl83s.mp3",
+    "https://files.catbox.moe/sg6ugl.mp3"
+  ],
   "💋": ["https://files.catbox.moe/37dqpx.mp3"],
   "🫦": ["https://files.catbox.moe/61w3i0.mp3"],
   "😴": ["https://files.catbox.moe/rm5ozj.mp3"],
   "🙏": ["https://files.catbox.moe/7avi7u.mp3"],
   "😼": ["https://files.catbox.moe/4oz916.mp3"],
-  "🖕": ["https://files.catbox.moe/593u3j.mp3", "https://files.catbox.moe/dtua60.mp3"],
+  "🖕": [
+    "https://files.catbox.moe/593u3j.mp3",
+    "https://files.catbox.moe/dtua60.mp3"
+  ],
   "🥵": ["https://files.catbox.moe/l90704.mp3"],
   "🙂": ["https://files.catbox.moe/4oks08.mp3"],
   "😒": ["https://files.catbox.moe/mt5il0.mp3"],
@@ -55,89 +83,66 @@ const DEFAULT_EMOJIS = {
 };
 
 /* =========================================================
-   STORAGE
+   DATA
 ========================================================= */
 
-function getStore() {
-  if (!global.GoatBot.emojiVoiceStore) {
-    global.GoatBot.emojiVoiceStore = {
-      emojis: { ...DEFAULT_EMOJIS },
-      groups: {}
-    };
-  }
-
-  return global.GoatBot.emojiVoiceStore;
-}
-
-function saveStore() {
+function loadData() {
   try {
-    const config = global.GoatBot.config;
+    if (fs.existsSync(DATA_FILE)) {
+      const data = JSON.parse(
+        fs.readFileSync(DATA_FILE, "utf8")
+      );
 
-    if (!config.emojiVoiceStore) {
-      config.emojiVoiceStore = getStore();
-    } else {
-      config.emojiVoiceStore = getStore();
-    }
-
-    fs.writeFileSync(
-      CONFIG_FILE,
-      JSON.stringify(config, null, 2)
-    );
-  } catch (err) {
-    console.error("[EMOJI_VOICE] Save error:", err.message);
-  }
-}
-
-function loadStore() {
-  try {
-    const saved = global.GoatBot.config?.emojiVoiceStore;
-
-    if (saved) {
-      global.GoatBot.emojiVoiceStore = {
+      return {
         emojis: {
           ...DEFAULT_EMOJIS,
-          ...(saved.emojis || {})
+          ...(data.emojis || {})
         },
-        groups: saved.groups || {}
+        groups: data.groups || {}
       };
-    } else {
-      getStore();
     }
-  } catch {
-    getStore();
+  } catch (err) {
+    console.error(
+      "[EMOJI_VOICE] DATA LOAD ERROR:",
+      err.message
+    );
   }
+
+  return {
+    emojis: { ...DEFAULT_EMOJIS },
+    groups: {}
+  };
 }
 
-loadStore();
+let DATA = loadData();
+
+function saveData() {
+  try {
+    fs.writeFileSync(
+      DATA_FILE,
+      JSON.stringify(DATA, null, 2)
+    );
+  } catch (err) {
+    console.error(
+      "[EMOJI_VOICE] DATA SAVE ERROR:",
+      err.message
+    );
+  }
+}
 
 /* =========================================================
    BOT ADMIN CHECK
 ========================================================= */
 
 function isBotAdmin(event) {
-  const senderID = String(event.senderID);
+  const uid = String(event.senderID);
 
-  // GoatBot role system
-  if (
-    Array.isArray(global.GoatBot.config?.adminBot) &&
-    global.GoatBot.config.adminBot
-      .map(String)
-      .includes(senderID)
-  ) {
-    return true;
-  }
+  const adminList =
+    global.GoatBot?.config?.adminBot || [];
 
-  // Alternative admin list
-  if (
-    Array.isArray(global.GoatBot.config?.adminBotIds) &&
-    global.GoatBot.config.adminBotIds
-      .map(String)
-      .includes(senderID)
-  ) {
-    return true;
-  }
-
-  return false;
+  return adminList
+    .map(String)
+    .includes(uid);
 }
 
 /* =========================================================
@@ -145,40 +150,128 @@ function isBotAdmin(event) {
 ========================================================= */
 
 function isGroupEnabled(threadID) {
-  const store = getStore();
-
-  if (store.groups[threadID] === undefined) {
+  if (DATA.groups[threadID] === undefined) {
     return true;
   }
 
-  return store.groups[threadID] === true;
+  return DATA.groups[threadID] === true;
 }
 
 function setGroupStatus(threadID, status) {
-  const store = getStore();
-
-  store.groups[threadID] = status;
-
-  saveStore();
+  DATA.groups[threadID] = status;
+  saveData();
 }
 
 /* =========================================================
-   DOWNLOAD + SEND VOICE
+   GET CURRENT BOT GROUPS
 ========================================================= */
 
-async function sendVoice(message, emoji, audioUrl) {
+async function getCurrentBotGroups(api) {
+  const result = [];
 
-  const cacheDir = path.join(__dirname, "cache");
+  try {
+    const botID = String(
+      api.getCurrentUserID()
+    );
+
+    /*
+     * getThreadList = বর্তমানে bot-এর account-এ
+     * থাকা thread list.
+     */
+    const threads = await api.getThreadList(
+      1000,
+      null,
+      ["INBOX"]
+    );
+
+    if (!Array.isArray(threads)) {
+      return result;
+    }
+
+    for (const thread of threads) {
+      if (!thread) continue;
+
+      const threadID = String(
+        thread.threadID || ""
+      );
+
+      if (!threadID) continue;
+
+      /*
+       * Group হতে হবে
+       */
+      const participantIDs =
+        Array.isArray(thread.participantIDs)
+          ? thread.participantIDs.map(String)
+          : [];
+
+      const isGroup =
+        participantIDs.length > 2 ||
+        thread.isGroup === true;
+
+      if (!isGroup) continue;
+
+      /*
+       * Bot নিজে group-এ আছে কিনা
+       */
+      if (
+        participantIDs.length &&
+        !participantIDs.includes(botID)
+      ) {
+        continue;
+      }
+
+      let name =
+        thread.name ||
+        thread.threadName ||
+        "Unnamed Group";
+
+      result.push({
+        threadID,
+        name
+      });
+    }
+  } catch (err) {
+    console.error(
+      "[EMOJI_VOICE] GROUP LIST ERROR:",
+      err.message
+    );
+  }
+
+  /*
+   * Duplicate remove
+   */
+  const unique = [];
+  const seen = new Set();
+
+  for (const group of result) {
+    if (seen.has(group.threadID)) continue;
+
+    seen.add(group.threadID);
+    unique.push(group);
+  }
+
+  return unique;
+}
+
+/* =========================================================
+   SEND VOICE
+========================================================= */
+
+async function sendVoice(message, audioUrl) {
+  const cacheDir =
+    path.join(__dirname, "cache");
 
   await fs.ensureDir(cacheDir);
 
   const filePath = path.join(
     cacheDir,
-    `ev_${Date.now()}_${Math.floor(Math.random() * 999999)}.mp3`
+    `ev_${Date.now()}_${Math.floor(
+      Math.random() * 999999
+    )}.mp3`
   );
 
   try {
-
     const response = await axios.get(
       audioUrl,
       {
@@ -199,47 +292,61 @@ async function sendVoice(message, emoji, audioUrl) {
   } catch (error) {
 
     console.error(
-      "[EMOJI_VOICE] Voice error:",
+      "[EMOJI_VOICE] VOICE ERROR:",
       error.message
     );
 
-    // আগের funny error message
-    return message.reply(
-      "ইমোজি দিয়ে লাভ নাই 🤣\n" +
-      "যাও ভালো মুন্সী দেখো গা জান 💋"
-    );
+    /*
+     * আগের funny error message
+     */
+    try {
+      await message.reply(
+        "ইমোজি দিয়ে লাভ নাই 🤣\n" +
+        "যাও ভালো মুন্সী দেখো গা জান 💋"
+      );
+    } catch {}
 
   } finally {
 
     setTimeout(() => {
-
       try {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
       } catch {}
-
     }, 10000);
   }
 }
 
 /* =========================================================
-   COMMAND
+   MODULE
 ========================================================= */
 
 module.exports = {
 
   config: {
     name: "emoji_voice",
-    aliases: ["ev"],
-    version: "1.0.0",
+
+    aliases: [
+      "ev"
+    ],
+
+    version: "3.0.0",
+
     author: "Mohammad Maruf",
+
     countDown: 3,
+
+    /*
+     * শুধুমাত্র Bot Admin
+     */
     role: 2,
 
-    shortDescription: "Emoji Voice",
+    shortDescription:
+      "Emoji Voice System",
+
     longDescription:
-      "Emoji Voice system with group control and voice management.",
+      "Emoji voice with group management.",
 
     category: "system",
 
@@ -247,6 +354,7 @@ module.exports = {
       en:
         "ev\n" +
         "ev setting\n" +
+        "ev list\n" +
         "ev manage\n" +
         "ev on\n" +
         "ev off\n" +
@@ -261,35 +369,34 @@ module.exports = {
   onStart: async function ({
     api,
     event,
-    message,
     args,
-    threadsData,
-    role
+    message
   }) {
 
     /*
-     * IMPORTANT:
-     * এই command-এর config role = 2।
-     * তাই সাধারণ member / group admin command system
-     * দিয়ে এখানে ঢুকতে পারবে না।
-     *
-     * তারপরও extra security হিসেবে Bot Admin check করা হচ্ছে।
+     * Extra security:
+     * শুধু Bot Admin
      */
-
-    if (!isBotAdmin(event) && role < 2) {
+    if (!isBotAdmin(event)) {
       return;
     }
 
-    const threadID = event.threadID;
-    const cmd = args[0]?.toLowerCase();
+    const cmd =
+      (args[0] || "").toLowerCase();
+
+    const threadID =
+      String(event.threadID);
 
     /* =====================================================
-       EV ON
+       ON
     ===================================================== */
 
     if (cmd === "on") {
 
-      setGroupStatus(threadID, true);
+      setGroupStatus(
+        threadID,
+        true
+      );
 
       return message.reply(
         "╭━━━━━━━━━━━━━━━━━━╮\n" +
@@ -301,12 +408,15 @@ module.exports = {
     }
 
     /* =====================================================
-       EV OFF
+       OFF
     ===================================================== */
 
     if (cmd === "off") {
 
-      setGroupStatus(threadID, false);
+      setGroupStatus(
+        threadID,
+        false
+      );
 
       return message.reply(
         "╭━━━━━━━━━━━━━━━━━━╮\n" +
@@ -315,48 +425,6 @@ module.exports = {
         "┃ 🔴 𝗦𝘁𝗮𝘁𝘂𝘀 : 𝗢𝗙𝗙\n" +
         "╰━━━━━━━━━━━━━━━━━━╯"
       );
-    }
-
-    /* =====================================================
-       ADD EV
-    ===================================================== */
-
-    if (
-      (cmd === "add" && args[1]?.toLowerCase() === "ev") ||
-      cmd === "add"
-    ) {
-
-      const trigger = await new Promise(resolve => {
-
-        message.reply(
-          "╭━━━━━━━━━━━━━━━━━━━━╮\n" +
-          "┃ 🎙️ 𝗔𝗗𝗗 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘\n" +
-          "┃\n" +
-          "┃ প্রথমে Emoji পাঠাও।\n" +
-          "┃ উদাহরণ: 😍\n" +
-          "╰━━━━━━━━━━━━━━━━━━━━╯",
-          (err, info) => {
-
-            if (err || !info) {
-              resolve(null);
-              return;
-            }
-
-            global.GoatBot.onReply.set(
-              info.messageID,
-              {
-                commandName: "emoji_voice",
-                type: "addEmoji"
-              }
-            );
-
-            resolve(info);
-          }
-        );
-
-      });
-
-      return trigger;
     }
 
     /* =====================================================
@@ -379,7 +447,7 @@ module.exports = {
         "┃ ④ 🔴 𝗢𝗙𝗙\n" +
         "┃ ⑤ 🟢 𝗢𝗡\n" +
         "┃\n" +
-        "┃ 💡 Type:\n" +
+        "┃ 𝗖𝗼𝗺𝗺𝗮𝗻𝗱:\n" +
         "┃ ev list\n" +
         "┃ ev manage\n" +
         "┃ add ev\n" +
@@ -398,17 +466,21 @@ module.exports = {
       cmd === "emojilist"
     ) {
 
-      const emojis = Object.keys(getStore().emojis);
+      const emojis =
+        Object.keys(DATA.emojis);
 
       let text =
         "╭━━━━━━〔 🎙️ 𝗘𝗩 𝗟𝗜𝗦𝗧 〕━━━━━━╮\n";
 
-      emojis.forEach((emoji, index) => {
+      emojis.forEach(
+        (emoji, index) => {
 
-        text +=
-          `┃ ${String(index + 1).padStart(2, "0")} ┃ ${emoji}\n`;
-
-      });
+          text +=
+            `┃ ${String(
+              index + 1
+            ).padStart(2, "0")} ┃ ${emoji}\n`;
+        }
+      );
 
       text +=
         "╰━━━━━━━━━━━━━━━━━━━━━━━━╯\n" +
@@ -426,107 +498,128 @@ module.exports = {
       cmd === "groups"
     ) {
 
-      try {
+      const groups =
+        await getCurrentBotGroups(api);
 
-        const allThreads =
-          await threadsData.getAll();
+      const onGroups = [];
+      const offGroups = [];
 
-        const onGroups = [];
-        const offGroups = [];
+      /*
+       * শুধুমাত্র বর্তমানে joined groups
+       */
+      for (const group of groups) {
 
-        for (const thread of allThreads || []) {
+        if (
+          isGroupEnabled(
+            group.threadID
+          )
+        ) {
+          onGroups.push(group);
+        } else {
+          offGroups.push(group);
+        }
+      }
 
-          const id =
-            String(
-              thread.threadID ||
-              thread.id ||
-              ""
-            );
+      let result =
+        "╭━━━━━━〔 👥 𝗘𝗩 𝗠𝗔𝗡𝗔𝗚𝗘 〕━━━━━━╮\n\n";
 
-          if (!id) continue;
+      /* ON */
 
-          let name =
-            thread.threadName ||
-            thread.name ||
-            "Unnamed Group";
+      result +=
+        "🟢 𝗢𝗡 𝗚𝗥𝗢𝗨𝗣𝗦\n" +
+        "━━━━━━━━━━━━━━━━━━\n";
 
-          const enabled =
-            isGroupEnabled(id);
+      if (!onGroups.length) {
 
-          if (enabled) {
-            onGroups.push({
-              id,
-              name
-            });
-          } else {
-            offGroups.push({
-              id,
-              name
-            });
+        result +=
+          "┃ 𝗡𝗼 𝗢𝗡 𝗚𝗿𝗼𝘂𝗽\n";
+
+      } else {
+
+        onGroups.forEach(
+          (group, index) => {
+
+            result +=
+              `┃ ${String(
+                index + 1
+              ).padStart(2, "0")} ┃ ${group.name}\n`;
           }
-        }
-
-        let result =
-          "╭━━━━━━〔 👥 𝗘𝗩 𝗠𝗔𝗡𝗔𝗚𝗘 〕━━━━━━╮\n\n";
-
-        result +=
-          "🟢 𝗢𝗡 𝗚𝗥𝗢𝗨𝗣𝗦\n" +
-          "━━━━━━━━━━━━━━━━━━\n";
-
-        if (!onGroups.length) {
-          result += "┃ No ON groups\n";
-        } else {
-
-          onGroups.forEach((g, i) => {
-
-            result +=
-              `┃ ${i + 1}. ${g.name}\n`;
-
-          });
-        }
-
-        result +=
-          "\n🔴 𝗢𝗙𝗙 𝗚𝗥𝗢𝗨𝗣𝗦\n" +
-          "━━━━━━━━━━━━━━━━━━\n";
-
-        if (!offGroups.length) {
-          result += "┃ No OFF groups\n";
-        } else {
-
-          offGroups.forEach((g, i) => {
-
-            result +=
-              `┃ ${i + 1}. ${g.name}\n`;
-
-          });
-        }
-
-        result +=
-          "\n━━━━━━━━━━━━━━━━━━\n" +
-          `🟢 ON : ${onGroups.length}\n` +
-          `🔴 OFF : ${offGroups.length}\n` +
-          `📦 TOTAL : ${onGroups.length + offGroups.length}`;
-
-        return message.reply(result);
-
-      } catch (err) {
-
-        console.error(
-          "[EV MANAGE]",
-          err.message
-        );
-
-        return message.reply(
-          "❌ Group list load করা সম্ভব হয়নি।"
         );
       }
+
+      /* OFF */
+
+      result +=
+        "\n🔴 𝗢𝗙𝗙 𝗚𝗥𝗢𝗨𝗣𝗦\n" +
+        "━━━━━━━━━━━━━━━━━━\n";
+
+      if (!offGroups.length) {
+
+        result +=
+          "┃ 𝗡𝗼 𝗢𝗙𝗙 𝗚𝗿𝗼𝘂𝗽\n";
+
+      } else {
+
+        offGroups.forEach(
+          (group, index) => {
+
+            result +=
+              `┃ ${String(
+                index + 1
+              ).padStart(2, "0")} ┃ ${group.name}\n`;
+          }
+        );
+      }
+
+      result +=
+        "\n━━━━━━━━━━━━━━━━━━\n" +
+        `🟢 𝗢𝗡 : ${onGroups.length}\n` +
+        `🔴 𝗢𝗙𝗙 : ${offGroups.length}\n` +
+        `📦 𝗧𝗢𝗧𝗔𝗟 : ${groups.length}`;
+
+      return message.reply(result);
+    }
+
+    /* =====================================================
+       ADD EV
+    ===================================================== */
+
+    if (
+      cmd === "add" &&
+      args[1]?.toLowerCase() === "ev"
+    ) {
+
+      return message.reply(
+        "╭━━━━━━━━━━━━━━━━━━━━╮\n" +
+        "┃ 🎙️ 𝗔𝗗𝗗 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘\n" +
+        "┃\n" +
+        "┃ প্রথমে Emoji পাঠাও।\n" +
+        "┃\n" +
+        "┃ উদাহরণ: 😍\n" +
+        "╰━━━━━━━━━━━━━━━━━━━━╯",
+        (err, info) => {
+
+          if (err || !info) return;
+
+          global.GoatBot.onReply.set(
+            info.messageID,
+            {
+              commandName:
+                "emoji_voice",
+
+              type:
+                "addEmoji"
+            }
+          );
+        }
+      );
     }
 
     return;
   },
 
   /* =======================================================
-     REPLY SYSTEM — ADD EV
+     ON REPLY
   ======================================================= */
 
   onReply: async function ({
@@ -535,17 +628,29 @@ module.exports = {
     Reply
   }) {
 
-    if (!isBotAdmin(event)) return;
+    /*
+     * শুধু Bot Admin
+     */
+    if (!isBotAdmin(event)) {
+      return;
+    }
 
-    if (!Reply || Reply.commandName !== "emoji_voice") {
+    if (
+      !Reply ||
+      Reply.commandName !==
+        "emoji_voice"
+    ) {
       return;
     }
 
     /* =====================================================
-       STEP 1 — EMOJI
+       EMOJI STEP
     ===================================================== */
 
-    if (Reply.type === "addEmoji") {
+    if (
+      Reply.type ===
+      "addEmoji"
+    ) {
 
       const emoji =
         event.body?.trim();
@@ -557,6 +662,7 @@ module.exports = {
         "┃ 🔗 𝗩𝗢𝗜𝗖𝗘 𝗟𝗜𝗡𝗞\n" +
         "┃\n" +
         "┃ এখন voice/audio link পাঠাও।\n" +
+        "┃\n" +
         "┃ উদাহরণ:\n" +
         "┃ https://files.catbox.moe/example.mp3\n" +
         "╰━━━━━━━━━━━━━━━━━━━━╯",
@@ -567,21 +673,27 @@ module.exports = {
           global.GoatBot.onReply.set(
             info.messageID,
             {
-              commandName: "emoji_voice",
-              type: "addVoice",
+              commandName:
+                "emoji_voice",
+
+              type:
+                "addVoice",
+
               emoji
             }
           );
-
         }
       );
     }
 
     /* =====================================================
-       STEP 2 — VOICE URL
+       VOICE URL STEP
     ===================================================== */
 
-    if (Reply.type === "addVoice") {
+    if (
+      Reply.type ===
+      "addVoice"
+    ) {
 
       const url =
         event.body?.trim();
@@ -592,38 +704,39 @@ module.exports = {
       ) {
 
         return message.reply(
-          "❌ সঠিক voice URL পাঠাও।"
+          "❌ 𝗜𝗻𝘃𝗮𝗹𝗶𝗱 𝗩𝗼𝗶𝗰𝗲 𝗟𝗶𝗻𝗸!"
         );
       }
 
       const emoji =
         Reply.emoji;
 
-      const store =
-        getStore();
-
-      if (!store.emojis[emoji]) {
-        store.emojis[emoji] = [];
+      if (
+        !DATA.emojis[emoji]
+      ) {
+        DATA.emojis[emoji] = [];
       }
 
-      store.emojis[emoji].push(url);
+      DATA.emojis[emoji].push(
+        url
+      );
 
-      saveStore();
+      saveData();
 
       return message.reply(
         "╭━━━━━━━━━━━━━━━━━━━━╮\n" +
         "┃ ✅ 𝗘𝗩 𝗔𝗗𝗗𝗘𝗗\n" +
         "┃\n" +
-        `┃ 🎭 Emoji : ${emoji}\n` +
-        "┃ 🎙️ Voice : Added\n" +
-        `┃ 📦 Total Voice : ${store.emojis[emoji].length}\n` +
+        `┃ 🎭 𝗘𝗺𝗼𝗷𝗶 : ${emoji}\n` +
+        "┃ 🎙️ 𝗩𝗼𝗶𝗰𝗲 : 𝗔𝗱𝗱𝗲𝗱\n" +
+        `┃ 📦 𝗩𝗼𝗶𝗰𝗲𝘀 : ${DATA.emojis[emoji].length}\n` +
         "╰━━━━━━━━━━━━━━━━━━━━╯"
       );
     }
   },
 
   /* =======================================================
-     NORMAL CHAT — EMOJI VOICE
+     EMOJI VOICE CHAT
   ======================================================= */
 
   onChat: async function ({
@@ -637,40 +750,44 @@ module.exports = {
     if (!body) return;
 
     /*
-     * IMPORTANT:
-     * Setting commands এখানে process করা হবে না।
+     * শুধু emoji check.
      *
-     * ফলে সাধারণ member / group admin
-     * onChat দিয়ে EV settings bypass করতে পারবে না।
-     *
-     * শুধু emoji হলে voice system কাজ করবে।
+     * এখানে কোনো EV setting command নেই।
+     * তাই member/group-admin এখান দিয়ে
+     * setting bypass করতে পারবে না।
      */
 
-    const store =
-      getStore();
-
     const audioList =
-      store.emojis[body];
+      DATA.emojis[body];
 
-    if (!audioList?.length) {
+    if (
+      !audioList ||
+      !audioList.length
+    ) {
       return;
     }
 
-    // Group OFF হলে কোনো voice যাবে না
-    if (!isGroupEnabled(event.threadID)) {
+    /*
+     * Group OFF হলে voice যাবে না
+     */
+    if (
+      !isGroupEnabled(
+        String(event.threadID)
+      )
+    ) {
       return;
     }
 
     const audioUrl =
       audioList[
         Math.floor(
-          Math.random() * audioList.length
+          Math.random() *
+          audioList.length
         )
       ];
 
     await sendVoice(
       message,
-      body,
       audioUrl
     );
   }
