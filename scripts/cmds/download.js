@@ -2,7 +2,6 @@ const fs = require("fs");
 const { downloadVideo } = require("sagor-video-downloader");
 
 module.exports = {
-
   config: {
     name: "download",
     version: "1.0.0",
@@ -15,7 +14,7 @@ module.exports = {
     },
 
     longDescription: {
-      en: "Download Facebook and TikTok videos by direct link or reply"
+      en: "Download Facebook and TikTok videos from links or replied posts"
     },
 
     category: "media",
@@ -23,9 +22,15 @@ module.exports = {
     guide: {
       en:
         "{pn} <Facebook/TikTok link>\n" +
-        "Reply to a Facebook/TikTok link with: download"
+        "Reply to a Facebook/TikTok Reel with: download"
     }
   },
+
+  /* =====================================================
+     PROCESS LOCK
+  ===================================================== */
+
+  processing: new Set(),
 
   /* =====================================================
      REACTION
@@ -53,97 +58,282 @@ module.exports = {
   ===================================================== */
 
   isSupportedUrl: function (url) {
-
     try {
-
-      const parsed =
-        new URL(url);
+      const parsed = new URL(url);
 
       const hostname =
         parsed.hostname
           .toLowerCase()
           .replace(/^www\./, "");
 
-      /*
-       * Facebook
-       */
-
-      const isFacebook =
+      return (
         hostname === "facebook.com" ||
         hostname.endsWith(".facebook.com") ||
-        hostname === "fb.watch";
-
-      /*
-       * TikTok
-       */
-
-      const isTikTok =
+        hostname === "fb.watch" ||
         hostname === "tiktok.com" ||
-        hostname.endsWith(".tiktok.com");
-
-      return (
-        isFacebook ||
-        isTikTok
+        hostname.endsWith(".tiktok.com")
       );
 
     } catch {
-
       return false;
-
     }
   },
 
   /* =====================================================
-     EXTRACT FACEBOOK / TIKTOK URL
+     CLEAN URL
   ===================================================== */
 
-  extractUrl: function (text) {
+  cleanUrl: function (url) {
+    if (!url) return null;
 
-    if (!text) {
-      return null;
-    }
+    return String(url)
+      .trim()
+      .replace(
+        /^[<("'`\[]+/,
+        ""
+      )
+      .replace(
+        /[>),.!?;:'"`\]]+$/g,
+        ""
+      );
+  },
+
+  /* =====================================================
+     FIND URL FROM TEXT
+  ===================================================== */
+
+  extractUrlFromText: function (text) {
+    if (!text) return null;
 
     const matches =
-      text.match(
-        /https?:\/\/[^\s]+/gi
+      String(text).match(
+        /https?:\/\/[^\s<>"']+/gi
       );
 
     if (!matches) {
       return null;
     }
 
-    for (
-      const rawUrl of matches
-    ) {
-
-      /*
-       * URL-এর শেষে থাকা punctuation remove
-       */
-
-      const cleanUrl =
-        rawUrl
-          .replace(
-            /[),.!?]+$/g,
-            ""
-          );
-
-      /*
-       * Facebook / TikTok হলে
-       * সরাসরি return
-       */
+    for (const raw of matches) {
+      const url =
+        this.cleanUrl(raw);
 
       if (
-        this.isSupportedUrl(
-          cleanUrl
-        )
+        url &&
+        this.isSupportedUrl(url)
       ) {
-
-        return cleanUrl;
-
+        return url;
       }
     }
 
     return null;
+  },
+
+  /* =====================================================
+     DEEP URL FINDER
+     
+     Facebook shared Reel/Post-এর information
+     nested object-এ থাকলেও খুঁজবে।
+  ===================================================== */
+
+  findUrlDeep: function (
+    data,
+    visited = new Set(),
+    depth = 0
+  ) {
+
+    if (
+      data === null ||
+      data === undefined ||
+      depth > 8
+    ) {
+      return null;
+    }
+
+    /* String */
+
+    if (
+      typeof data === "string"
+    ) {
+
+      return this.extractUrlFromText(
+        data
+      );
+    }
+
+    /* Prevent circular object */
+
+    if (
+      typeof data === "object"
+    ) {
+
+      if (
+        visited.has(data)
+      ) {
+        return null;
+      }
+
+      visited.add(data);
+    }
+
+    /* Array */
+
+    if (
+      Array.isArray(data)
+    ) {
+
+      for (
+        const item of data
+      ) {
+
+        const found =
+          this.findUrlDeep(
+            item,
+            visited,
+            depth + 1
+          );
+
+        if (found) {
+          return found;
+        }
+      }
+
+      return null;
+    }
+
+    /* Object */
+
+    if (
+      typeof data === "object"
+    ) {
+
+      /*
+       * URL-related fields আগে check করা হচ্ছে
+       */
+
+      const priorityKeys = [
+        "url",
+        "href",
+        "link",
+        "uri",
+        "source",
+        "targetUrl",
+        "targetURL",
+        "webUrl",
+        "webURL",
+        "permalink",
+        "permalink_url",
+        "shareUrl",
+        "shareURL",
+        "originalUrl",
+        "originalURL"
+      ];
+
+      for (
+        const key of priorityKeys
+      ) {
+
+        if (
+          Object.prototype.hasOwnProperty.call(
+            data,
+            key
+          )
+        ) {
+
+          const found =
+            this.findUrlDeep(
+              data[key],
+              visited,
+              depth + 1
+            );
+
+          if (found) {
+            return found;
+          }
+        }
+      }
+
+      /*
+       * এরপর পুরো object scan
+       */
+
+      for (
+        const [key, value]
+        of Object.entries(data)
+      ) {
+
+        /*
+         * body/message/text-এ URL থাকলে
+         */
+
+        if (
+          key === "body" ||
+          key === "message" ||
+          key === "text" ||
+          key === "caption" ||
+          key === "description"
+        ) {
+
+          const found =
+            this.findUrlDeep(
+              value,
+              visited,
+              depth + 1
+            );
+
+          if (found) {
+            return found;
+          }
+        }
+      }
+
+      /*
+       * শেষ ধাপে অন্যান্য fields
+       */
+
+      for (
+        const value
+        of Object.values(data)
+      ) {
+
+        const found =
+          this.findUrlDeep(
+            value,
+            visited,
+            depth + 1
+          );
+
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    return null;
+  },
+
+  /* =====================================================
+     GET URL FROM REPLIED MESSAGE
+  ===================================================== */
+
+  getReplyUrl: function (
+    event
+  ) {
+
+    const reply =
+      event.messageReply;
+
+    if (!reply) {
+      return null;
+    }
+
+    /*
+     * পুরো reply object scan
+     */
+
+    return this.findUrlDeep(
+      reply
+    );
   },
 
   /* =====================================================
@@ -156,11 +346,26 @@ module.exports = {
     url
   }) {
 
-    let filePath = null;
+    const processID =
+      String(event.messageID);
 
     /*
-     * Download শুরু
+     * একই event দ্বিতীয়বার এলে stop
      */
+
+    if (
+      this.processing.has(
+        processID
+      )
+    ) {
+      return;
+    }
+
+    this.processing.add(
+      processID
+    );
+
+    let filePath = null;
 
     await this.setReaction(
       api,
@@ -188,14 +393,13 @@ module.exports = {
         throw new Error(
           "Video file not found"
         );
-
       }
 
       filePath =
         result.filePath;
 
       /* ================================================
-         25 MB LIMIT
+         25 MB CHECK
       ================================================= */
 
       const stats =
@@ -227,12 +431,20 @@ module.exports = {
       await new Promise(
         (resolve, reject) => {
 
+          const stream =
+            fs.createReadStream(
+              filePath
+            );
+
+          stream.on(
+            "error",
+            reject
+          );
+
           api.sendMessage(
             {
               attachment:
-                fs.createReadStream(
-                  filePath
-                )
+                stream
             },
 
             event.threadID,
@@ -247,7 +459,6 @@ module.exports = {
 
             }
           );
-
         }
       );
 
@@ -264,7 +475,7 @@ module.exports = {
     } catch (error) {
 
       console.error(
-        "[DOWNLOAD]",
+        "[DOWNLOAD ERROR]",
         error.message
       );
 
@@ -294,6 +505,14 @@ module.exports = {
         } catch {}
 
       }
+
+      /*
+       * Lock remove
+       */
+
+      this.processing.delete(
+        processID
+      );
     }
   },
 
@@ -314,10 +533,6 @@ module.exports = {
         .join(" ")
         .trim();
 
-    /*
-     * Link নেই
-     */
-
     if (!input) {
 
       await this.setReaction(
@@ -329,13 +544,8 @@ module.exports = {
       return;
     }
 
-    /*
-     * একই URL extractor
-     * reply এবং direct দুই জায়গাতেই
-     */
-
     const url =
-      this.extractUrl(
+      this.extractUrlFromText(
         input
       );
 
@@ -360,9 +570,9 @@ module.exports = {
   /* =====================================================
      ON CHAT
      
-     Facebook/TikTok link দেখলে
-     সেই message-এর জন্য reply listener
-     তৈরি করা হবে।
+     ONLY REPLY PROCESSING
+     
+     কোনো onReply নেই, তাই duplicate হবে না।
   ===================================================== */
 
   onChat: async function ({
@@ -371,181 +581,54 @@ module.exports = {
   }) {
 
     const body =
-      (
+      String(
         event.body || ""
-      ).trim();
+      )
+      .trim()
+      .toLowerCase();
 
     /*
-     * ---------------------------------------------------
-     * CASE 1
-     * 
-     * কেউ সরাসরি "download" লিখেছে
-     * এবং কোনো message reply করেছে।
-     * ---------------------------------------------------
+     * শুধু "download" হলে reply check করবে।
      */
 
     if (
-      body.toLowerCase() ===
-      "download"
+      body !== "download"
     ) {
-
-      const repliedMessage =
-        event.messageReply;
-
-      if (
-        !repliedMessage
-      ) {
-        return;
-      }
-
-      const replyText =
-        repliedMessage.body ||
-        "";
-
-      /*
-       * Original message থেকে
-       * একই extractor ব্যবহার
-       */
-
-      const url =
-        this.extractUrl(
-          replyText
-        );
-
-      if (!url) {
-        return;
-      }
-
-      return this.downloadAndSend({
-        api,
-        event,
-        url
-      });
+      return;
     }
 
     /*
-     * ---------------------------------------------------
-     * CASE 2
-     *
-     * Message-এর মধ্যে Facebook/TikTok link আছে।
-     *
-     * এটাকে reply করার পর:
-     *
-     * download
-     *
-     * লিখলে onChat সেটা ধরবে।
-     * ---------------------------------------------------
+     * কোনো reply নেই
+     */
+
+    if (
+      !event.messageReply
+    ) {
+      return;
+    }
+
+    /*
+     * Original Reel/Post থেকে URL বের করা
      */
 
     const url =
-      this.extractUrl(
-        body
+      this.getReplyUrl(
+        event
       );
+
+    /*
+     * URL না পাওয়া গেলে silent
+     */
 
     if (!url) {
       return;
     }
 
     /*
-     * Link message-এ reply data save
-     */
-
-    try {
-
-      /*
-       * GoatBot reply system
-       *
-       * Link message-এর ID-তে
-       * download command-এর information রাখা হচ্ছে।
-       */
-
-      global.GoatBot.onReply.set(
-        event.messageID,
-        {
-          commandName:
-            "download",
-
-          type:
-            "downloadVideo",
-
-          url:
-            url
-        }
-      );
-
-    } catch (error) {
-
-      console.error(
-        "[DOWNLOAD REPLY SET]",
-        error.message
-      );
-
-    }
-  },
-
-  /* =====================================================
-     ON REPLY
-     
-     Facebook/TikTok link message-এ
-     reply করে "download"
-  ===================================================== */
-
-  onReply: async function ({
-    api,
-    event,
-    Reply
-  }) {
-
-    if (!Reply) {
-      return;
-    }
-
-    /*
-     * শুধু download reply
-     */
-
-    const body =
-      (
-        event.body || ""
-      )
-      .trim()
-      .toLowerCase();
-
-    if (
-      body !==
-      "download"
-    ) {
-      return;
-    }
-
-    /*
-     * অন্য command-এর reply হলে
-     * কিছু করবে না
+     * Safety check
      */
 
     if (
-      Reply.commandName !==
-      "download"
-    ) {
-      return;
-    }
-
-    if (
-      Reply.type !==
-      "downloadVideo"
-    ) {
-      return;
-    }
-
-    /*
-     * আগে থেকেই extracted URL
-     */
-
-    const url =
-      Reply.url;
-
-    if (
-      !url ||
       !this.isSupportedUrl(
         url
       )
@@ -554,7 +637,7 @@ module.exports = {
     }
 
     /*
-     * Download শুরু
+     * Download
      */
 
     return this.downloadAndSend({
