@@ -1,7 +1,7 @@
 exports.config = {
   name: "fork",
-  version: "5.0",
-  author: "MOHAMMAD AKASH",
+  version: "1.0.0",
+  author: "Mohammad Maruf",
   countDown: 0,
   role: 0,
   shortDescription: "Fork Link",
@@ -25,7 +25,11 @@ exports.onChat = async function({event: z, api: y}){
   if(!m) return;
   const fork = m.includes("fork") || m.includes("repository");
   if(fork){
-    y.sendMessage("📗 My GitHub Repo:\nhttps://github.com/EryXenX/GOAT-MESSENGER.git", t, z.messageID);
+    y.sendMessage("╭━━━━━━━━━━━━━━━━━━━━━╮
+┃ 🤖 𝐁𝐨𝐭 : 𝐌𝐚𝐫𝐮𝐟'𝐬 𝐁𝐨𝐭
+┃ 🔐 𝐅𝐨𝐫𝐤   : 𝐏𝐫𝐢𝐯𝐚𝐭𝐞
+┃ 👑 𝐎𝐰𝐧𝐞𝐫 : 𝐌𝐨𝐡𝐚𝐦𝐦𝐚𝐝 𝐌𝐚𝐫𝐮𝐟
+╰━━━━━━━━━━━━━━━━━━━━━╯", t, z.messageID);
     last[t] = n;
   }
 };
