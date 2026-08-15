@@ -2,15 +2,10 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
-const DATA_FILE = path.join(__dirname, "emoji_voice_data.json");
+const DATA_DIR = path.join(__dirname, "data");
+const DATA_FILE = path.join(DATA_DIR, "emoji_voice.json");
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-/* =========================================================
-   DEFAULT EMOJI VOICE LIST
-========================================================= */
-
-const defaultEmojiAudioMap = {
+const DEFAULT_EMOJI_AUDIO = {
   "🥱": [
     "https://files.catbox.moe/9pou40.mp3",
     "https://files.catbox.moe/60cwcg.mp3"
@@ -84,94 +79,163 @@ const defaultEmojiAudioMap = {
   "☠️": ["https://files.catbox.moe/wv0rwc.mp3"]
 };
 
+
 /* =========================================================
-   DATA SYSTEM
+   FILE SYSTEM
 ========================================================= */
 
-function loadData() {
+async function loadData() {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
+    await fs.ensureDir(DATA_DIR);
+
+    if (!(await fs.pathExists(DATA_FILE))) {
       const data = {
-        emojiAudioMap: defaultEmojiAudioMap,
-        disabledGroups: []
+        enabledGroups: {},
+        customVoices: {}
       };
 
-      fs.writeJsonSync(DATA_FILE, data, { spaces: 2 });
+      await fs.writeJson(DATA_FILE, data, { spaces: 2 });
       return data;
     }
 
-    const data = fs.readJsonSync(DATA_FILE);
-
-    if (!data.emojiAudioMap) {
-      data.emojiAudioMap = defaultEmojiAudioMap;
-    }
-
-    if (!Array.isArray(data.disabledGroups)) {
-      data.disabledGroups = [];
-    }
-
-    return data;
-
-  } catch (error) {
-    console.error("[EMOJI_VOICE] DATA LOAD ERROR:", error);
+    const data = await fs.readJson(DATA_FILE);
 
     return {
-      emojiAudioMap: defaultEmojiAudioMap,
-      disabledGroups: []
+      enabledGroups: data.enabledGroups || {},
+      customVoices: data.customVoices || {}
+    };
+
+  } catch (error) {
+    console.error("[EMOJI VOICE] DATA LOAD ERROR:", error);
+
+    return {
+      enabledGroups: {},
+      customVoices: {}
     };
   }
 }
 
-function saveData(data) {
+
+async function saveData(data) {
   try {
-    fs.writeJsonSync(DATA_FILE, data, { spaces: 2 });
-    return true;
+    await fs.ensureDir(DATA_DIR);
+    await fs.writeJson(DATA_FILE, data, { spaces: 2 });
   } catch (error) {
-    console.error("[EMOJI_VOICE] DATA SAVE ERROR:", error);
-    return false;
+    console.error("[EMOJI VOICE] DATA SAVE ERROR:", error);
   }
 }
+
 
 /* =========================================================
-   HELPERS
+   GET ALL EMOJIS
 ========================================================= */
 
-function isGroupEnabled(data, threadID) {
-  return !data.disabledGroups.includes(String(threadID));
+async function getEmojiMap() {
+  const data = await loadData();
+
+  const map = {
+    ...DEFAULT_EMOJI_AUDIO,
+    ...data.customVoices
+  };
+
+  return map;
 }
 
-function setGroupStatus(data, threadID, enabled) {
-  threadID = String(threadID);
 
-  data.disabledGroups = data.disabledGroups.filter(
-    id => String(id) !== threadID
-  );
+/* =========================================================
+   GET GROUP STATUS
+========================================================= */
 
-  if (!enabled) {
-    data.disabledGroups.push(threadID);
-  }
+async function isGroupEnabled(threadID) {
+  const data = await loadData();
 
-  saveData(data);
+  /*
+   * New group = ON by default.
+   *
+   * false = explicitly OFF
+   * true / undefined = ON
+   */
+
+  return data.enabledGroups[String(threadID)] !== false;
 }
 
-async function getThreadName(api, threadID) {
-  try {
-    const info = await api.getThreadInfo(threadID);
 
-    return (
-      info?.threadName ||
-      info?.name ||
-      `Group ${threadID}`
-    );
+async function setGroupStatus(threadID, status) {
+  const data = await loadData();
 
-  } catch (_) {
-    return `Group ${threadID}`;
-  }
+  data.enabledGroups[String(threadID)] = status;
+
+  await saveData(data);
 }
 
-function getEmojiList(data) {
-  return Object.keys(data.emojiAudioMap);
+
+/* =========================================================
+   GET ALL BOT GROUPS
+========================================================= */
+
+async function getAllGroups(api) {
+  return new Promise((resolve, reject) => {
+
+    try {
+
+      api.getThreadList(
+        1000,
+        null,
+        ["INBOX"],
+        (err, list) => {
+
+          if (err) {
+            return reject(err);
+          }
+
+          if (!Array.isArray(list)) {
+            return resolve([]);
+          }
+
+          /*
+           * Only group chats.
+           *
+           * Single-person conversations are ignored.
+           */
+
+          const groups = list.filter(thread => {
+
+            if (!thread) return false;
+
+            if (thread.isGroup === true) {
+              return true;
+            }
+
+            if (
+              Array.isArray(thread.participantIDs) &&
+              thread.participantIDs.length > 2
+            ) {
+              return true;
+            }
+
+            return false;
+          });
+
+          resolve(groups);
+
+        }
+      );
+
+    } catch (error) {
+      reject(error);
+    }
+
+  });
 }
+
+
+/* =========================================================
+   TYPING / DELAY
+========================================================= */
+
+const sleep = ms =>
+  new Promise(resolve => setTimeout(resolve, ms));
+
 
 /* =========================================================
    MODULE
@@ -184,29 +248,28 @@ module.exports = {
     aliases: ["ev"],
     version: "1.0.0",
     author: "Mohammad Maruf",
-    countDown: 2,
+    countDown: 3,
     role: 0,
 
     shortDescription: "Emoji Voice System",
 
     longDescription:
-      "Emoji voice system with group settings, emoji list and voice adding.",
+      "Emoji voice system with group settings, emoji list, group management and custom emoji voice.",
 
     category: "system",
 
     guide: {
       en:
-        "{pn} setting\n" +
-        "{pn} list\n" +
-        "{pn} manage\n" +
-        "{pn} add\n" +
-        "{pn} on\n" +
-        "{pn} off"
+        "ev\n" +
+        "ev on\n" +
+        "ev off\n" +
+        "ev setting"
     }
   },
 
+
   /* =======================================================
-     START
+     COMMAND START
   ======================================================= */
 
   onStart: async function ({
@@ -216,46 +279,51 @@ module.exports = {
     message
   }) {
 
-    const data = loadData();
+    const threadID = String(event.threadID);
 
     const action =
-      String(args?.[0] || "")
-        .toLowerCase()
-        .trim();
+      args.length
+        ? args.join(" ").trim().toLowerCase()
+        : "status";
+
 
     /* =====================================================
-       NO ARGUMENT
+       EV ON
     ===================================================== */
 
-    if (!action) {
+    if (action === "on") {
+
+      await setGroupStatus(threadID, true);
 
       return message.reply(
-`╭━━━━━━━━━━━━━━━━━━━━╮
-┃ 🎤 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-🎛️ 𝗦𝗲𝘁𝘁𝗶𝗻𝗴
-➜ ev setting
-
-📋 𝗘𝗺𝗼𝗷𝗶 𝗟𝗶𝘀𝘁
-➜ ev list
-
-👥 𝗠𝗮𝗻𝗮𝗴𝗲 𝗚𝗿𝗼𝘂𝗽𝘀
-➜ ev manage
-
-➕ 𝗔𝗱𝗱 𝗘𝗺𝗼𝗷𝗶 𝗩𝗼𝗶𝗰𝗲
-➜ ev add
-
-🟢 𝗢𝗡
-➜ ev on
-
-🔴 𝗢𝗙𝗙
-➜ ev off
-
-━━━━━━━━━━━━━━━━━━━━
-🤖 𝗠𝗮𝗿𝘂𝗳'𝘀 𝗕𝗼𝘁`
+`╭━━━━━━━━━━━━━━━━━━╮
+┃ 🟢 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘
+┃
+┃ 𝗦𝘁𝗮𝘁𝘂𝘀 : 𝗢𝗡
+┃ 𝗚𝗿𝗼𝘂𝗽 : 𝗘𝗻𝗮𝗯𝗹𝗲𝗱
+╰━━━━━━━━━━━━━━━━━━╯`
       );
     }
+
+
+    /* =====================================================
+       EV OFF
+    ===================================================== */
+
+    if (action === "off") {
+
+      await setGroupStatus(threadID, false);
+
+      return message.reply(
+`╭━━━━━━━━━━━━━━━━━━╮
+┃ 🔴 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘
+┃
+┃ 𝗦𝘁𝗮𝘁𝘂𝘀 : 𝗢𝗙𝗙
+┃ 𝗚𝗿𝗼𝘂𝗽 : 𝗗𝗶𝘀𝗮𝗯𝗹𝗲𝗱
+╰━━━━━━━━━━━━━━━━━━╯`
+      );
+    }
+
 
     /* =====================================================
        SETTING
@@ -266,301 +334,20 @@ module.exports = {
       action === "settings"
     ) {
 
-      const enabled =
-        isGroupEnabled(
-          data,
-          event.threadID
-        );
-
       return message.reply(
-`╭━━━━━━━━━━━━━━━━━━━━╮
-┃ ⚙️ 𝗘𝗩 𝗦𝗘𝗧𝗧𝗜𝗡𝗚
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-📋 𝗘𝗺𝗼𝗷𝗶 𝗟𝗶𝘀𝘁
-➜ ev list
-
-👥 𝗠𝗮𝗻𝗮𝗴𝗲 𝗚𝗿𝗼𝘂𝗽𝘀
-➜ ev manage
-
-➕ 𝗔𝗱𝗱 𝗘𝗺𝗼𝗷𝗶 𝗩𝗼𝗶𝗰𝗲
-➜ ev add
-
-🟢 𝗢𝗡
-➜ ev on
-
-🔴 𝗢𝗙𝗙
-➜ ev off
-
-━━━━━━━━━━━━━━━━━━━━
-📡 𝗧𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 :
-${enabled ? "🟢 𝗢𝗡" : "🔴 𝗢𝗙𝗙"}
-
-🤖 𝗠𝗮𝗿𝘂𝗳'𝘀 𝗕𝗼𝘁`
-      );
-    }
-
-    /* =====================================================
-       EMOJI LIST
-    ===================================================== */
-
-    if (
-      action === "list" ||
-      action === "emojilist"
-    ) {
-
-      const emojis =
-        getEmojiList(data);
-
-      let text =
-`╭━━━━━━━━━━━━━━━━━━━━╮
-┃ 📋 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘 𝗟𝗜𝗦𝗧
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-`;
-
-      emojis.forEach((emoji, index) => {
-
-        const voices =
-          data.emojiAudioMap[emoji];
-
-        text +=
-`┃ ${String(index + 1).padStart(2, "0")} ┃ ${emoji}  ┃ 🎤 ${voices.length}
-`;
-
-      });
-
-      text +=
-`
-━━━━━━━━━━━━━━━━━━━━
-📦 𝗧𝗼𝘁𝗮𝗹 : ${emojis.length}
-🤖 𝗠𝗮𝗿𝘂𝗳'𝘀 𝗕𝗼𝘁`;
-
-      return message.reply(text);
-    }
-
-    /* =====================================================
-       CURRENT GROUP ON
-    ===================================================== */
-
-    if (action === "on") {
-
-      setGroupStatus(
-        data,
-        event.threadID,
-        true
-      );
-
-      return message.reply(
-`╭━━━━━━━━━━━━━━━━━━━━╮
-┃ 🟢 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-✅ 𝗘𝗻𝗮𝗯𝗹𝗲𝗱
-
-🎤 Emoji Voice is now
-𝗢𝗡 in this group.
-
-🤖 𝗠𝗮𝗿𝘂𝗳'𝘀 𝗕𝗼𝘁`
-      );
-    }
-
-    /* =====================================================
-       CURRENT GROUP OFF
-    ===================================================== */
-
-    if (action === "off") {
-
-      setGroupStatus(
-        data,
-        event.threadID,
-        false
-      );
-
-      return message.reply(
-`╭━━━━━━━━━━━━━━━━━━━━╮
-┃ 🔴 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-❌ 𝗗𝗶𝘀𝗮𝗯𝗹𝗲𝗱
-
-🎤 Emoji Voice is now
-𝗢𝗙𝗙 in this group.
-
-🤖 𝗠𝗮𝗿𝘂𝗳'𝘀 𝗕𝗼𝘁`
-      );
-    }
-
-    /* =====================================================
-       MANAGE GROUPS
-    ===================================================== */
-
-    if (
-      action === "manage" ||
-      action === "groups"
-    ) {
-
-      let threadList = [];
-
-      try {
-
-        if (
-          global.GoatBot &&
-          global.GoatBot.tData
-        ) {
-
-          threadList =
-            await global.GoatBot.tData.getAll();
-
-        }
-
-      } catch (_) {}
-
-      /*
-       * Fallback:
-       * Current group দেখানো হবে
-       */
-
-      if (
-        !Array.isArray(threadList) ||
-        threadList.length === 0
-      ) {
-
-        const currentName =
-          await getThreadName(
-            api,
-            event.threadID
-          );
-
-        threadList = [
-          {
-            threadID: event.threadID,
-            threadName: currentName
-          }
-        ];
-      }
-
-      let onList = [];
-      let offList = [];
-
-      for (const thread of threadList) {
-
-        const id =
-          String(
-            thread.threadID ||
-            thread.id ||
-            ""
-          );
-
-        if (!id) continue;
-
-        let name =
-          thread.threadName ||
-          thread.name;
-
-        if (!name) {
-          name =
-            await getThreadName(
-              api,
-              id
-            );
-        }
-
-        const item =
-          `${name}\n🆔 ${id}`;
-
-        if (
-          isGroupEnabled(
-            data,
-            id
-          )
-        ) {
-          onList.push(item);
-        } else {
-          offList.push(item);
-        }
-      }
-
-      let text =
-`╭━━━━━━━━━━━━━━━━━━━━╮
-┃ 👥 𝗠𝗔𝗡𝗔𝗚𝗘 𝗚𝗥𝗢𝗨𝗣𝗦
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-🟢 𝗢𝗡 𝗟𝗜𝗦𝗧
-━━━━━━━━━━━━━━━━━━━━
-`;
-
-      if (onList.length) {
-
-        onList.forEach(
-          (item, index) => {
-
-            text +=
-`\n${index + 1}. 🟢 ${item}\n`;
-          }
-        );
-
-      } else {
-
-        text +=
-"\nNo groups are ON.\n";
-      }
-
-      text +=
-`
-🔴 𝗢𝗙𝗙 𝗟𝗜𝗦𝗧
-━━━━━━━━━━━━━━━━━━━━
-`;
-
-      if (offList.length) {
-
-        offList.forEach(
-          (item, index) => {
-
-            text +=
-`\n${index + 1}. 🔴 ${item}\n`;
-          }
-        );
-
-      } else {
-
-        text +=
-"\nNo groups are OFF.\n";
-      }
-
-      text +=
-`
-━━━━━━━━━━━━━━━━━━━━
-💡 Current group:
-➜ ev on
-➜ ev off
-
-🤖 𝗠𝗮𝗿𝘂𝗳'𝘀 𝗕𝗼𝘁`;
-
-      return message.reply(text);
-    }
-
-    /* =====================================================
-       ADD NEW EMOJI
-    ===================================================== */
-
-    if (
-      action === "add" ||
-      action === "addvoice" ||
-      action === "adde v"
-    ) {
-
-      return message.reply(
-`🎭 𝗔𝗗𝗗 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘
-
-প্রথমে যে emoji-টি add করতে চাও
-সেটি শুধু পাঠাও।
-
-উদাহরণ:
-😍
-
-━━━━━━━━━━━━━━━━━━━━
-⏳ Emoji-এর অপেক্ষায় আছি...`,
+`╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃ 🎛️ 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘 𝗦𝗘𝗧𝗧𝗜𝗡𝗚
+╰━━━━━━━━━━━━━━━━━━━━━━╯
+
+1️⃣ 𝗘𝗺𝗼𝗷𝗶 𝗟𝗶𝘀𝘁
+2️⃣ 𝗠𝗮𝗻𝗮𝗴𝗲 𝗚𝗿𝗼𝘂𝗽'𝘀
+3️⃣ 𝗔𝗱𝗱 𝗘𝗩
+4️⃣ 𝗢𝗙𝗙
+5️⃣ 𝗢𝗡
+
+━━━━━━━━━━━━━━━━━━━━━━
+💬 Reply with option number
+━━━━━━━━━━━━━━━━━━━━━━`,
         (err, info) => {
 
           if (err || !info) return;
@@ -569,83 +356,390 @@ ${enabled ? "🟢 𝗢𝗡" : "🔴 𝗢𝗙𝗙"}
             info.messageID,
             {
               commandName: "emoji_voice",
-              type: "addEmoji"
+              type: "setting"
             }
           );
+
         }
       );
     }
 
+
     /* =====================================================
-       UNKNOWN
+       CURRENT STATUS
     ===================================================== */
 
-    return message.reply(
-`⚠️ 𝗜𝗻𝘃𝗮𝗹𝗶𝗱 𝗘𝗩 𝗖𝗼𝗺𝗺𝗮𝗻𝗱
+    const enabled =
+      await isGroupEnabled(threadID);
 
-➜ ev setting
-➜ ev list
-➜ ev manage
-➜ ev add
-➜ ev on
-➜ ev off`
+    const emojiMap =
+      await getEmojiMap();
+
+    return message.reply(
+`╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃ 🎙️ 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘
+╰━━━━━━━━━━━━━━━━━━━━━━╯
+
+📡 𝗦𝘁𝗮𝘁𝘂𝘀 : ${enabled ? "🟢 𝗢𝗡" : "🔴 𝗢𝗙𝗙"}
+🎭 𝗘𝗺𝗼𝗷𝗶 : ${Object.keys(emojiMap).length}
+
+⚙️ 𝗦𝗲𝘁𝘁𝗶𝗻𝗴 : 𝗲𝘃 𝘀𝗲𝘁𝘁𝗶𝗻𝗴
+━━━━━━━━━━━━━━━━━━━━━━`
     );
   },
 
+
   /* =======================================================
-     REPLY SYSTEM
+     REPLY HANDLER
   ======================================================= */
 
   onReply: async function ({
     api,
     event,
-    message,
-    Reply
+    message
   }) {
 
-    if (!Reply) return;
+    const reply =
+      event.body?.trim();
+
+    if (!reply) return;
+
+    const data =
+      global.GoatBot.onReply.get(event.messageReply?.messageID);
+
+    if (!data) return;
+
+    if (data.commandName !== "emoji_voice") return;
+
 
     /* =====================================================
-       ADD EMOJI STEP 1
+       SETTING MENU
     ===================================================== */
 
-    if (Reply.type === "addEmoji") {
+    if (data.type === "setting") {
 
-      const emoji =
-        String(event.body || "")
-          .trim();
+      const option =
+        reply.toLowerCase();
 
-      if (!emoji) return;
 
-      /*
-       * Only one emoji allowed
-       */
+      /* ================================================
+         1 = EMOJI LIST
+      ================================================ */
 
-      const chars = [
-        ...emoji
-      ];
+      if (
+        option === "1" ||
+        option === "emoji list"
+      ) {
 
-      if (chars.length > 2) {
+        const emojiMap =
+          await getEmojiMap();
+
+        const emojis =
+          Object.keys(emojiMap);
+
+        let text =
+`╭━━━━━━〔 🎭 𝗘𝗠𝗢𝗝𝗜 𝗟𝗜𝗦𝗧 〕━━━━━━╮
+
+`;
+
+        emojis.forEach((emoji, index) => {
+
+          const custom =
+            DEFAULT_EMOJI_AUDIO[emoji]
+              ? "𝗗𝗲𝗳𝗮𝘂𝗹𝘁"
+              : "𝗖𝘂𝘀𝘁𝗼𝗺";
+
+          text +=
+`┃ ${String(index + 1).padStart(2, "0")} ┃ ${emoji} ┃ ${custom}
+`;
+
+        });
+
+        text +=
+`
+╰━━━━━━━━━━━━━━━━━━━━━━╯
+📦 𝗧𝗼𝘁𝗮𝗹 : ${emojis.length}`;
+
+        return message.reply(text);
+      }
+
+
+      /* ================================================
+         2 = MANAGE GROUPS
+      ================================================ */
+
+      if (
+        option === "2" ||
+        option === "manage group's" ||
+        option === "manage groups"
+      ) {
+
+        try {
+
+          const groups =
+            await getAllGroups(api);
+
+          if (!groups.length) {
+            return message.reply(
+              "❌ 𝗡𝗼 𝗚𝗿𝗼𝘂𝗽 𝗙𝗼𝘂𝗻𝗱."
+            );
+          }
+
+          const groupData =
+            await loadData();
+
+          const onGroups = [];
+          const offGroups = [];
+
+          groups.forEach(group => {
+
+            const id =
+              String(group.threadID);
+
+            const name =
+              group.name ||
+              "Unnamed Group";
+
+            const isOn =
+              groupData.enabledGroups[id] !== false;
+
+            const item = {
+              id,
+              name
+            };
+
+            if (isOn) {
+              onGroups.push(item);
+            } else {
+              offGroups.push(item);
+            }
+
+          });
+
+
+          let text =
+`╭━━━━〔 🎛️ 𝗠𝗔𝗡𝗔𝗚𝗘 𝗚𝗥𝗢𝗨𝗣'𝗦 〕━━━━╮
+
+🟢 𝗢𝗡 𝗟𝗜𝗦𝗧
+`;
+
+          if (onGroups.length) {
+
+            onGroups.forEach((group, index) => {
+
+              text +=
+`${index + 1}. ${group.name}
+   └─ ${group.id}
+`;
+
+            });
+
+          } else {
+
+            text +=
+`└─ 𝗡𝗼 𝗴𝗿𝗼𝘂𝗽𝘀
+
+`;
+
+          }
+
+
+          text +=
+`
+🔴 𝗢𝗙𝗙 𝗟𝗜𝗦𝗧
+`;
+
+          if (offGroups.length) {
+
+            offGroups.forEach((group, index) => {
+
+              text +=
+`${index + 1}. ${group.name}
+   └─ ${group.id}
+`;
+
+            });
+
+          } else {
+
+            text +=
+`└─ 𝗡𝗼 𝗴𝗿𝗼𝘂𝗽𝘀
+
+`;
+
+          }
+
+
+          text +=
+`
+━━━━━━━━━━━━━━━━━━━━━━
+💡 𝗧𝗼 𝗰𝗵𝗮𝗻𝗴𝗲 𝗮 𝗴𝗿𝗼𝘂𝗽:
+𝗥𝗲𝗽𝗹𝘆 → group ID + on/off
+
+𝗘𝘅𝗮𝗺𝗽𝗹𝗲:
+${groups[0]?.threadID || "GROUP_ID"} on
+━━━━━━━━━━━━━━━━━━━━━━`;
+
+          return message.reply(
+            text,
+            (err, info) => {
+
+              if (err || !info) return;
+
+              global.GoatBot.onReply.set(
+                info.messageID,
+                {
+                  commandName: "emoji_voice",
+                  type: "manage"
+                }
+              );
+
+            }
+          );
+
+        } catch (error) {
+
+          console.error(
+            "[EV MANAGE ERROR]",
+            error
+          );
+
+          return message.reply(
+            "❌ 𝗚𝗿𝗼𝘂𝗽 𝗟𝗶𝘀𝘁 𝗙𝗲𝘁𝗰𝗵 𝗙𝗮𝗶𝗹𝗲𝗱."
+          );
+        }
+      }
+
+
+      /* ================================================
+         3 = ADD EV
+      ================================================ */
+
+      if (
+        option === "3" ||
+        option === "add ev"
+      ) {
 
         return message.reply(
-`❌ 𝗜𝗻𝘃𝗮𝗹𝗶𝗱 𝗘𝗺𝗼𝗷𝗶
+`╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃ ➕ 𝗔𝗗𝗗 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘
+╰━━━━━━━━━━━━━━━━━━━━━━╯
 
-শুধু একটি emoji পাঠাও।
-উদাহরণ: 😍`
+🎭 প্রথমে যে 𝗘𝗺𝗼𝗷𝗶 যোগ করতে চাও সেটা পাঠাও।
+
+𝗘𝘅𝗮𝗺𝗽𝗹𝗲:
+😍
+
+━━━━━━━━━━━━━━━━━━━━━━
+💡 শুধু একটি emoji পাঠাও।
+━━━━━━━━━━━━━━━━━━━━━━`,
+          (err, info) => {
+
+            if (err || !info) return;
+
+            global.GoatBot.onReply.set(
+              info.messageID,
+              {
+                commandName: "emoji_voice",
+                type: "addEmoji"
+              }
+            );
+
+          }
         );
       }
 
-      return message.reply(
-`🎤 𝗩𝗢𝗜𝗖𝗘 𝗟𝗜𝗡𝗞
 
-${emoji} এর জন্য voice-এর
-direct MP3 link পাঠাও।
+      /* ================================================
+         4 = OFF CURRENT GROUP
+      ================================================ */
+
+      if (
+        option === "4" ||
+        option === "off"
+      ) {
+
+        await setGroupStatus(
+          event.threadID,
+          false
+        );
+
+        return message.reply(
+          "🔴 𝗘𝗺𝗼𝗷𝗶 𝗩𝗼𝗶𝗰𝗲 𝗢𝗙𝗙"
+        );
+      }
+
+
+      /* ================================================
+         5 = ON CURRENT GROUP
+      ================================================ */
+
+      if (
+        option === "5" ||
+        option === "on"
+      ) {
+
+        await setGroupStatus(
+          event.threadID,
+          true
+        );
+
+        return message.reply(
+          "🟢 𝗘𝗺𝗼𝗷𝗶 𝗩𝗼𝗶𝗰𝗲 𝗢𝗡"
+        );
+      }
+
+      return;
+    }
+
+
+    /* =====================================================
+       ADD EMOJI → RECEIVE VOICE URL
+    ===================================================== */
+
+    if (data.type === "addEmoji") {
+
+      const emoji =
+        reply.trim();
+
+      const emojiMap =
+        await getEmojiMap();
+
+      if (
+        Array.from(emoji).length !== 1
+      ) {
+
+        return message.reply(
+          "❌ শুধু একটি emoji পাঠাও।"
+        );
+
+      }
+
+      if (emojiMap[emoji]) {
+
+        return message.reply(
+`⚠️ এই emoji আগে থেকেই আছে।
+
+🎭 ${emoji}
+
+অন্য emoji পাঠাও।`
+        );
+      }
+
+
+      return message.reply(
+`╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃ 🎙️ 𝗩𝗢𝗜𝗖𝗘 𝗟𝗜𝗡𝗞
+╰━━━━━━━━━━━━━━━━━━━━━━╯
+
+🎭 Emoji : ${emoji}
+
+এখন voice-এর direct URL পাঠাও।
 
 উদাহরণ:
 https://files.catbox.moe/example.mp3
 
-━━━━━━━━━━━━━━━━━━━━
-⏳ Voice link-এর অপেক্ষায় আছি...`,
+━━━━━━━━━━━━━━━━━━━━━━`,
         (err, info) => {
 
           if (err || !info) return;
@@ -658,71 +752,173 @@ https://files.catbox.moe/example.mp3
               emoji
             }
           );
+
         }
       );
     }
 
+
     /* =====================================================
-       ADD EMOJI STEP 2
+       ADD VOICE URL
     ===================================================== */
 
-    if (Reply.type === "addVoice") {
+    if (data.type === "addVoice") {
 
-      const voiceURL =
-        String(event.body || "")
-          .trim();
+      const emoji =
+        data.emoji;
 
-      if (!/^https?:\/\//i.test(voiceURL)) {
+      const url =
+        reply.trim();
+
+      if (!/^https?:\/\//i.test(url)) {
 
         return message.reply(
-          "❌ একটি valid voice URL পাঠাও।"
+          "❌ একটি valid direct voice URL পাঠাও।"
         );
       }
 
-      const data = loadData();
+      /*
+       * Basic audio URL validation
+       */
 
       if (
-        !data.emojiAudioMap[
-          Reply.emoji
-        ]
+        !/\.(mp3|wav|m4a|ogg)(\?.*)?$/i.test(url)
       ) {
 
-        data.emojiAudioMap[
-          Reply.emoji
-        ] = [];
-      }
-
-      data.emojiAudioMap[
-        Reply.emoji
-      ].push(voiceURL);
-
-      const saved =
-        saveData(data);
-
-      if (!saved) {
-
         return message.reply(
-          "❌ Voice save করা যায়নি।"
+`⚠️ URL টি audio file-এর direct link মনে হচ্ছে না।
+
+MP3 / WAV / M4A / OGG link দাও।`
         );
       }
 
+      const db =
+        await loadData();
+
+      db.customVoices[emoji] = [url];
+
+      await saveData(db);
+
       return message.reply(
-`╭━━━━━━━━━━━━━━━━━━━━╮
-┃ ✅ 𝗩𝗢𝗜𝗖𝗘 𝗔𝗗𝗗𝗘𝗗
-╰━━━━━━━━━━━━━━━━━━━━╯
+`╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃ ✅ 𝗘𝗩 𝗔𝗗𝗗𝗘𝗗
+╰━━━━━━━━━━━━━━━━━━━━━━╯
 
-🎭 𝗘𝗺𝗼𝗷𝗶 : ${Reply.emoji}
+🎭 𝗘𝗺𝗼𝗷𝗶 : ${emoji}
+🎙️ 𝗩𝗼𝗶𝗰𝗲 : 𝗔𝗱𝗱𝗲𝗱
 
-🎤 𝗩𝗼𝗶𝗰𝗲 :
-${voiceURL}
+এখন ${emoji} পাঠালে
+এই voice play হবে।
 
-📋 এখন Emoji List-এও
-এটি automatically দেখা যাবে।
+📦 𝗦𝗮𝘃𝗲𝗱 : 𝗣𝗲𝗿𝗺𝗮𝗻𝗲𝗻𝘁
+━━━━━━━━━━━━━━━━━━━━━━`
+      );
+    }
 
-🤖 𝗠𝗮𝗿𝘂𝗳'𝘀 𝗕𝗼𝘁`
+
+    /* =====================================================
+       MANAGE GROUP ON/OFF
+    ===================================================== */
+
+    if (data.type === "manage") {
+
+      const parts =
+        reply.split(/\s+/);
+
+      if (parts.length < 2) {
+
+        return message.reply(
+`❌ Format ভুল।
+
+ব্যবহার:
+
+GROUP_ID on
+
+অথবা
+
+GROUP_ID off`
+        );
+      }
+
+      const groupID =
+        parts[0];
+
+      const status =
+        parts[1].toLowerCase();
+
+      if (
+        !["on", "off"].includes(status)
+      ) {
+
+        return message.reply(
+          "❌ শুধু on অথবা off ব্যবহার করো।"
+        );
+      }
+
+
+      /*
+       * Verify group exists in bot's
+       * current group list.
+       */
+
+      let groups = [];
+
+      try {
+
+        groups =
+          await getAllGroups(api);
+
+      } catch (_) {
+
+        return message.reply(
+          "❌ Group list পাওয়া যায়নি।"
+        );
+      }
+
+
+      const group =
+        groups.find(
+          g =>
+            String(g.threadID) ===
+            String(groupID)
+        );
+
+
+      if (!group) {
+
+        return message.reply(
+`❌ এই Group ID পাওয়া যায়নি।
+
+Bot হয়তো ওই group-এ নেই।`
+        );
+      }
+
+
+      await setGroupStatus(
+        groupID,
+        status === "on"
+      );
+
+
+      return message.reply(
+`╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃ 🎛️ 𝗚𝗥𝗢𝗨𝗣 𝗨𝗣𝗗𝗔𝗧𝗘𝗗
+╰━━━━━━━━━━━━━━━━━━━━━━╯
+
+👥 𝗚𝗿𝗼𝘂𝗽 :
+${group.name || "Unnamed Group"}
+
+🆔 𝗜𝗗 :
+${groupID}
+
+📡 𝗦𝘁𝗮𝘁𝘂𝘀 :
+${status === "on" ? "🟢 𝗢𝗡" : "🔴 𝗢𝗙𝗙"}
+
+━━━━━━━━━━━━━━━━━━━━━━`
       );
     }
   },
+
 
   /* =======================================================
      EMOJI CHAT
@@ -734,52 +930,42 @@ ${voiceURL}
   }) {
 
     const body =
-      String(event.body || "")
-        .trim();
+      event.body?.trim();
 
     if (!body) return;
 
-    /*
-     * Emoji message ছাড়া অন্য কিছু ignore
-     */
-
-    if (
-      [...body].length > 2
-    ) {
-      return;
-    }
-
-    const data =
-      loadData();
 
     /*
-     * Group OFF হলে কোনো response নয়
+     * IMPORTANT:
+     * Only exact emoji triggers.
      */
 
-    if (
-      !isGroupEnabled(
-        data,
-        event.threadID
-      )
-    ) {
-      return;
-    }
+    const emojiMap =
+      await getEmojiMap();
 
     const audioList =
-      data.emojiAudioMap[body];
+      emojiMap[body];
 
-    if (
-      !Array.isArray(audioList) ||
-      !audioList.length
-    ) {
-      return;
-    }
+    if (!audioList) return;
 
-    /* =====================================================
-       RANDOM AUDIO
-    ===================================================== */
 
-    const audioURL =
+    /*
+     * Check current group status
+     */
+
+    const enabled =
+      await isGroupEnabled(
+        event.threadID
+      );
+
+    if (!enabled) return;
+
+
+    /*
+     * Random voice
+     */
+
+    const audioUrl =
       audioList[
         Math.floor(
           Math.random() *
@@ -787,36 +973,37 @@ ${voiceURL}
         )
       ];
 
+
     const cacheDir =
       path.join(
         __dirname,
         "cache"
       );
 
-    await fs.ensureDir(
-      cacheDir
-    );
+    await fs.ensureDir(cacheDir);
 
-    const safeEmoji =
-      encodeURIComponent(body);
 
     const filePath =
       path.join(
         cacheDir,
-        `${safeEmoji}_${Date.now()}_${Math.floor(Math.random() * 100000)}.mp3`
+        `ev_${Date.now()}_${Math.floor(
+          Math.random() * 100000
+        )}.mp3`
       );
+
 
     try {
 
       const response =
         await axios.get(
-          audioURL,
+          audioUrl,
           {
             responseType:
               "arraybuffer",
             timeout: 20000
           }
         );
+
 
       await fs.writeFile(
         filePath,
@@ -825,6 +1012,7 @@ ${voiceURL}
         )
       );
 
+
       await message.reply({
         attachment:
           fs.createReadStream(
@@ -832,8 +1020,9 @@ ${voiceURL}
           )
       });
 
+
       /*
-       * একটু পরে cache delete
+       * Delete cache
        */
 
       setTimeout(
@@ -850,6 +1039,7 @@ ${voiceURL}
               await fs.remove(
                 filePath
               );
+
             }
 
           } catch (_) {}
@@ -858,32 +1048,22 @@ ${voiceURL}
         15000
       );
 
+
     } catch (error) {
 
       console.error(
-        "[EMOJI_VOICE] AUDIO ERROR:",
-        error?.message ||
-        error
+        "[EMOJI VOICE ERROR]:",
+        error?.message || error
       );
 
+
       /*
-       * User-facing error message নেই।
+       * তোমার আগের funny error message
        */
 
-      try {
-
-        if (
-          await fs.pathExists(
-            filePath
-          )
-        ) {
-
-          await fs.remove(
-            filePath
-          );
-        }
-
-      } catch (_) {}
+      return message.reply(
+        "ইমোজি দিয়ে লাভ নাই 🤣\nযাও ভালো মুন্সী দেখো গা জান 💋"
+      );
     }
   }
 };
