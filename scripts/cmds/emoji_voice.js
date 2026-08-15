@@ -581,39 +581,35 @@ module.exports = {
     }
 
     /* =====================================================
-       ADD EV
-    ===================================================== */
+   ADD EV
+===================================================== */
 
-    if (
-      cmd === "ev" &&
-      args[1]?.toLowerCase() === "add"
-    ) {
+if (
+  cmd === "add"
+) {
 
-      return message.reply(
-        "╭━━━━━━━━━━━━━━━━━━━━╮\n" +
-        "┃ 🎙️ 𝗔𝗗𝗗 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘\n" +
-        "┃\n" +
-        "┃ প্রথমে Emoji পাঠাও।\n" +
-        "┃\n" +
-        "┃ উদাহরণ: 😍\n" +
-        "╰━━━━━━━━━━━━━━━━━━━━╯",
-        (err, info) => {
+  return message.reply(
+    "╭━━━━━━━━━━━━━━━━━━━━╮\n" +
+    "┃ 🎙️ 𝗔𝗗𝗗 𝗘𝗠𝗢𝗝𝗜 𝗩𝗢𝗜𝗖𝗘\n" +
+    "┃\n" +
+    "┃ প্রথমে Emoji পাঠাও।\n" +
+    "┃\n" +
+    "┃ উদাহরণ: 😍\n" +
+    "╰━━━━━━━━━━━━━━━━━━━━╯",
+    (err, info) => {
 
-          if (err || !info) return;
+      if (err || !info) return;
 
-          global.GoatBot.onReply.set(
-            info.messageID,
-            {
-              commandName:
-                "emoji_voice",
-
-              type:
-                "addEmoji"
-            }
-          );
+      global.GoatBot.onReply.set(
+        info.messageID,
+        {
+          commandName: "emoji_voice",
+          type: "addEmoji"
         }
       );
     }
+  );
+}
 
     return;
   },
