@@ -54,7 +54,7 @@ module.exports = {
         { k: ["love","valobasi","miss"], r: "❤️" },
         { k: ["rag","angry","rage"], r: "😡" },
         { k: ["wow","omg"], r: "😮" },
-        { k: ["ok","yes","okay","hmm"], r: "👍" }
+        { k: ["okh","yes","okay","hmm"], r: "👍" }
       ];
 
       // ==========================
