@@ -4,25 +4,26 @@ const { downloadVideo } = require("sagor-video-downloader");
 module.exports = {
   config: {
     name: "download",
+    aliases: ["d"],
     version: "1.0.0",
     author: "Mohammad Maruf",
-    countDown: 5,
+    countDown: 3,
     role: 0,
 
     shortDescription: {
-      en: "Download Facebook & TikTok videos"
+      en: "Download video from link"
     },
 
     longDescription: {
-      en: "Download Facebook and TikTok videos from links or replied posts"
+      en: "Download video from a link or by replying to a link"
     },
 
     category: "media",
 
     guide: {
       en:
-        "{pn} <Facebook/TikTok link>\n" +
-        "Reply to a Facebook/TikTok Reel with: download"
+        "{pn} <link>\n" +
+        "Reply to a link with: {pn}"
     }
   },
 
@@ -54,86 +55,33 @@ module.exports = {
   },
 
   /* =====================================================
-     FACEBOOK / TIKTOK CHECK
+     EXTRACT URL FROM TEXT
   ===================================================== */
 
-  isSupportedUrl: function (url) {
-    try {
-      const parsed = new URL(url);
-
-      const hostname =
-        parsed.hostname
-          .toLowerCase()
-          .replace(/^www\./, "");
-
-      return (
-        hostname === "facebook.com" ||
-        hostname.endsWith(".facebook.com") ||
-        hostname === "fb.watch" ||
-        hostname === "tiktok.com" ||
-        hostname.endsWith(".tiktok.com")
-      );
-
-    } catch {
-      return false;
-    }
-  },
-
-  /* =====================================================
-     CLEAN URL
-  ===================================================== */
-
-  cleanUrl: function (url) {
-    if (!url) return null;
-
-    return String(url)
-      .trim()
-      .replace(
-        /^[<("'`\[]+/,
-        ""
-      )
-      .replace(
-        /[>),.!?;:'"`\]]+$/g,
-        ""
-      );
-  },
-
-  /* =====================================================
-     FIND URL FROM TEXT
-  ===================================================== */
-
-  extractUrlFromText: function (text) {
-    if (!text) return null;
-
-    const matches =
-      String(text).match(
-        /https?:\/\/[^\s<>"']+/gi
-      );
-
-    if (!matches) {
+  extractUrl: function (text) {
+    if (!text) {
       return null;
     }
 
-    for (const raw of matches) {
-      const url =
-        this.cleanUrl(raw);
+    const matches = String(text).match(
+      /https?:\/\/[^\s<>"']+/gi
+    );
 
-      if (
-        url &&
-        this.isSupportedUrl(url)
-      ) {
-        return url;
-      }
+    if (!matches || !matches.length) {
+      return null;
     }
 
-    return null;
+    return matches[0]
+      .trim()
+      .replace(/^[<("'`\[]+/, "")
+      .replace(/[>),.!?;:'"`\]]+$/g, "");
   },
 
   /* =====================================================
-     DEEP URL FINDER
+     FIND URL DEEPLY
      
-     Facebook shared Reel/Post-এর information
-     nested object-এ থাকলেও খুঁজবে।
+     Reply message-এর বিভিন্ন field থেকে
+     URL খুঁজে বের করবে।
   ===================================================== */
 
   findUrlDeep: function (
@@ -141,11 +89,10 @@ module.exports = {
     visited = new Set(),
     depth = 0
   ) {
-
     if (
       data === null ||
       data === undefined ||
-      depth > 8
+      depth > 7
     ) {
       return null;
     }
@@ -155,21 +102,15 @@ module.exports = {
     if (
       typeof data === "string"
     ) {
-
-      return this.extractUrlFromText(
-        data
-      );
+      return this.extractUrl(data);
     }
 
-    /* Prevent circular object */
+    /* Object protection */
 
     if (
       typeof data === "object"
     ) {
-
-      if (
-        visited.has(data)
-      ) {
+      if (visited.has(data)) {
         return null;
       }
 
@@ -181,11 +122,9 @@ module.exports = {
     if (
       Array.isArray(data)
     ) {
-
       for (
         const item of data
       ) {
-
         const found =
           this.findUrlDeep(
             item,
@@ -207,24 +146,22 @@ module.exports = {
       typeof data === "object"
     ) {
 
-      /*
-       * URL-related fields আগে check করা হচ্ছে
-       */
+      /* Priority URL fields */
 
       const priorityKeys = [
         "url",
         "href",
         "link",
         "uri",
+        "permalink",
+        "permalink_url",
+        "shareUrl",
+        "shareURL",
         "source",
         "targetUrl",
         "targetURL",
         "webUrl",
         "webURL",
-        "permalink",
-        "permalink_url",
-        "shareUrl",
-        "shareURL",
         "originalUrl",
         "originalURL"
       ];
@@ -253,30 +190,30 @@ module.exports = {
         }
       }
 
-      /*
-       * এরপর পুরো object scan
-       */
+      /* Common text fields */
+
+      const textKeys = [
+        "body",
+        "message",
+        "text",
+        "caption",
+        "description"
+      ];
 
       for (
-        const [key, value]
-        of Object.entries(data)
+        const key of textKeys
       ) {
 
-        /*
-         * body/message/text-এ URL থাকলে
-         */
-
         if (
-          key === "body" ||
-          key === "message" ||
-          key === "text" ||
-          key === "caption" ||
-          key === "description"
+          Object.prototype.hasOwnProperty.call(
+            data,
+            key
+          )
         ) {
 
           const found =
             this.findUrlDeep(
-              value,
+              data[key],
               visited,
               depth + 1
             );
@@ -287,9 +224,7 @@ module.exports = {
         }
       }
 
-      /*
-       * শেষ ধাপে অন্যান্য fields
-       */
+      /* Other fields */
 
       for (
         const value
@@ -313,26 +248,16 @@ module.exports = {
   },
 
   /* =====================================================
-     GET URL FROM REPLIED MESSAGE
+     GET URL FROM REPLY
   ===================================================== */
 
-  getReplyUrl: function (
-    event
-  ) {
-
-    const reply =
-      event.messageReply;
-
-    if (!reply) {
+  getReplyUrl: function (event) {
+    if (!event.messageReply) {
       return null;
     }
 
-    /*
-     * পুরো reply object scan
-     */
-
     return this.findUrlDeep(
-      reply
+      event.messageReply
     );
   },
 
@@ -349,9 +274,7 @@ module.exports = {
     const processID =
       String(event.messageID);
 
-    /*
-     * একই event দ্বিতীয়বার এলে stop
-     */
+    /* Prevent duplicate processing */
 
     if (
       this.processing.has(
@@ -370,17 +293,19 @@ module.exports = {
     await this.setReaction(
       api,
       event.messageID,
-      "⌛"
+      "🔰"
     );
 
     try {
 
-      /* ================================================
+      /* =================================================
          DOWNLOAD
       ================================================= */
 
       const result =
-        await downloadVideo(url);
+        await downloadVideo(
+          url
+        );
 
       if (
         !result ||
@@ -389,43 +314,16 @@ module.exports = {
           result.filePath
         )
       ) {
-
         throw new Error(
-          "Video file not found"
+          "Downloaded file not found"
         );
       }
 
       filePath =
         result.filePath;
 
-      /* ================================================
-         25 MB CHECK
-      ================================================= */
-
-      const stats =
-        fs.statSync(
-          filePath
-        );
-
-      const sizeMB =
-        stats.size /
-        (1024 * 1024);
-
-      if (
-        sizeMB > 25
-      ) {
-
-        await this.setReaction(
-          api,
-          event.messageID,
-          "❌"
-        );
-
-        return;
-      }
-
-      /* ================================================
-         SEND VIDEO
+      /* =================================================
+         SEND FILE
       ================================================= */
 
       await new Promise(
@@ -462,9 +360,7 @@ module.exports = {
         }
       );
 
-      /* ================================================
-         SUCCESS
-      ================================================= */
+      /* Success */
 
       await this.setReaction(
         api,
@@ -482,14 +378,12 @@ module.exports = {
       await this.setReaction(
         api,
         event.messageID,
-        "❌"
+        "⚠️"
       );
 
     } finally {
 
-      /*
-       * Temporary file delete
-       */
+      /* Delete temporary file */
 
       if (
         filePath &&
@@ -506,10 +400,6 @@ module.exports = {
 
       }
 
-      /*
-       * Lock remove
-       */
-
       this.processing.delete(
         processID
       );
@@ -517,9 +407,12 @@ module.exports = {
   },
 
   /* =====================================================
-     DIRECT COMMAND
+     PREFIX COMMAND SUPPORT
      
      /download <link>
+     /d <link>
+     
+     Prefix থাকলেও কাজ করবে।
   ===================================================== */
 
   onStart: async function ({
@@ -533,19 +426,8 @@ module.exports = {
         .join(" ")
         .trim();
 
-    if (!input) {
-
-      await this.setReaction(
-        api,
-        event.messageID,
-        "❌"
-      );
-
-      return;
-    }
-
     const url =
-      this.extractUrlFromText(
+      this.extractUrl(
         input
       );
 
@@ -554,7 +436,7 @@ module.exports = {
       await this.setReaction(
         api,
         event.messageID,
-        "❌"
+        "⚠️"
       );
 
       return;
@@ -568,11 +450,13 @@ module.exports = {
   },
 
   /* =====================================================
-     ON CHAT
+     PREFIXLESS SYSTEM
      
-     ONLY REPLY PROCESSING
+     download <link>
+     d <link>
      
-     কোনো onReply নেই, তাই duplicate হবে না।
+     Reply + download
+     Reply + d
   ===================================================== */
 
   onChat: async function ({
@@ -584,22 +468,58 @@ module.exports = {
       String(
         event.body || ""
       )
-      .trim()
-      .toLowerCase();
+      .trim();
 
-    /*
-     * শুধু "download" হলে reply check করবে।
-     */
+    if (!body) {
+      return;
+    }
+
+    const lower =
+      body.toLowerCase();
+
+    /* =================================================
+       DIRECT:
+       download <link>
+       d <link>
+    ================================================= */
+
+    const directMatch =
+      body.match(
+        /^(download|d)\s+(https?:\/\/\S+)$/i
+      );
+
+    if (directMatch) {
+
+      const url =
+        this.extractUrl(
+          directMatch[2]
+        );
+
+      if (!url) {
+        return;
+      }
+
+      return this.downloadAndSend({
+        api,
+        event,
+        url
+      });
+    }
+
+    /* =================================================
+       REPLY:
+       download
+       d
+    ================================================= */
 
     if (
-      body !== "download"
+      lower !== "download" &&
+      lower !== "d"
     ) {
       return;
     }
 
-    /*
-     * কোনো reply নেই
-     */
+    /* Must be a reply */
 
     if (
       !event.messageReply
@@ -607,38 +527,16 @@ module.exports = {
       return;
     }
 
-    /*
-     * Original Reel/Post থেকে URL বের করা
-     */
+    /* Find URL from replied message */
 
     const url =
       this.getReplyUrl(
         event
       );
 
-    /*
-     * URL না পাওয়া গেলে silent
-     */
-
     if (!url) {
       return;
     }
-
-    /*
-     * Safety check
-     */
-
-    if (
-      !this.isSupportedUrl(
-        url
-      )
-    ) {
-      return;
-    }
-
-    /*
-     * Download
-     */
 
     return this.downloadAndSend({
       api,
