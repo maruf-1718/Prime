@@ -8,35 +8,48 @@ module.exports = {
 
   onStart: async function ({ api, event }) {
     try {
-      // শুধু group member remove/leave event
-      if (event.logMessageType !== "log:unsubscribe") {
-        return;
-      }
+      console.log("[AUTOINVITE] EVENT:", event.logMessageType);
+      console.log("[AUTOINVITE] DATA:", event.logMessageData);
+
+      if (event.logMessageType !== "log:unsubscribe") return;
 
       const threadID = event.threadID;
       const data = event.logMessageData || {};
-
       const leftID = data.leftParticipantFbId;
 
-      // UID পাওয়া না গেলে কিছু করবে না
-      if (!leftID) return;
+      console.log("[AUTOINVITE] LEFT UID:", leftID);
+      console.log("[AUTOINVITE] AUTHOR:", event.author);
 
-      // Bot নিজে leave করলে তাকে আবার add করার চেষ্টা করবে না
-      if (String(leftID) === String(event.author)) {
+      if (!leftID) {
+        console.log("[AUTOINVITE] No leftParticipantFbId");
         return;
       }
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       try {
         await api.addUserToGroup(
           String(leftID),
-          threadID
+          String(threadID)
         );
-      } catch (_) {
-        // Add না পারলেও কোনো message করবে না
+
+        console.log(
+          "[AUTOINVITE] ADD SUCCESS:",
+          leftID
+        );
+
+      } catch (err) {
+        console.log(
+          "[AUTOINVITE] ADD FAILED:",
+          err?.message || err
+        );
       }
 
-    } catch (_) {
-      // কোনো error message নয়
+    } catch (err) {
+      console.log(
+        "[AUTOINVITE] ERROR:",
+        err?.message || err
+      );
     }
   }
 };
