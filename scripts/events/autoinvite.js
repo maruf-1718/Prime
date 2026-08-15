@@ -8,31 +8,35 @@ module.exports = {
 
   onStart: async function ({ api, event }) {
     try {
-      if (event.logMessageType !== "log:unsubscribe") return;
+      // শুধু group member remove/leave event
+      if (event.logMessageType !== "log:unsubscribe") {
+        return;
+      }
 
+      const threadID = event.threadID;
       const data = event.logMessageData || {};
+
       const leftID = data.leftParticipantFbId;
 
+      // UID পাওয়া না গেলে কিছু করবে না
       if (!leftID) return;
 
-      console.log("========== AUTOINVITE EVENT ==========");
-      console.log("threadID:", event.threadID);
-      console.log("leftID:", leftID);
-      console.log("author:", event.author);
-      console.log("logMessageData:", JSON.stringify(data, null, 2));
-      console.log("======================================");
+      // Bot নিজে leave করলে তাকে আবার add করার চেষ্টা করবে না
+      if (String(leftID) === String(event.author)) {
+        return;
+      }
 
-      // আপাতত leave হওয়া user-কে আবার add করার চেষ্টা
-      await api.addUserToGroup(
-        String(leftID),
-        event.threadID
-      );
+      try {
+        await api.addUserToGroup(
+          String(leftID),
+          threadID
+        );
+      } catch (_) {
+        // Add না পারলেও কোনো message করবে না
+      }
 
-    } catch (error) {
-      console.error(
-        "[AUTOINVITE ERROR]:",
-        error?.message || error
-      );
+    } catch (_) {
+      // কোনো error message নয়
     }
   }
 };
