@@ -44,7 +44,7 @@ module.exports = {
 
     const msg =
 `╭─❖─ 𝗥𝗨𝗡𝗧𝗜𝗠𝗘 ─❖─╮
-│       ${runtime}
+│        ${runtime}
 │    🤖 𝗠𝗮𝗿𝘂𝗳'𝘀 𝗕𝗼𝘁
 ╰──────────────╯`;
 
