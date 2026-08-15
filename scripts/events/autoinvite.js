@@ -8,23 +8,15 @@ module.exports = {
 
   onStart: async function ({ api, event }) {
     try {
-      console.log("[AUTOINVITE] EVENT:", event.logMessageType);
-      console.log("[AUTOINVITE] DATA:", event.logMessageData);
-
       if (event.logMessageType !== "log:unsubscribe") return;
 
       const threadID = event.threadID;
       const data = event.logMessageData || {};
       const leftID = data.leftParticipantFbId;
 
-      console.log("[AUTOINVITE] LEFT UID:", leftID);
-      console.log("[AUTOINVITE] AUTHOR:", event.author);
+      if (!leftID) return;
 
-      if (!leftID) {
-        console.log("[AUTOINVITE] No leftParticipantFbId");
-        return;
-      }
-
+      // Add করার আগে ছোট delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       try {
@@ -32,24 +24,12 @@ module.exports = {
           String(leftID),
           String(threadID)
         );
-
-        console.log(
-          "[AUTOINVITE] ADD SUCCESS:",
-          leftID
-        );
-
-      } catch (err) {
-        console.log(
-          "[AUTOINVITE] ADD FAILED:",
-          err?.message || err
-        );
+      } catch (_) {
+        // Add করা না গেলে কোনো message দেবে না
       }
 
-    } catch (err) {
-      console.log(
-        "[AUTOINVITE] ERROR:",
-        err?.message || err
-      );
+    } catch (_) {
+      // কোনো error message দেবে না
     }
   }
 };
