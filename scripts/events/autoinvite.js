@@ -6,24 +6,45 @@ module.exports = {
     category: "events"
   },
 
-  onStart: async ({ api, event }) => {
-    // শুধু কেউ নিজে group leave করলে কাজ করবে
-    if (event.logMessageType !== "log:unsubscribe") return;
-
-    const { threadID, logMessageData, author } = event;
-    const leftID = logMessageData.leftParticipantFbId;
-
-    // Kick করা হলে কাজ করবে না
-    if (!leftID || leftID !== author) return;
-
+  onStart: async function ({ api, event }) {
     try {
-      // Leave করা member-কে আবার group-এ add করার চেষ্টা
-      await api.addUserToGroup(leftID, threadID);
+      // শুধু member leave/remove event
+      if (event.logMessageType !== "log:unsubscribe") return;
 
-      // কোনো message পাঠাবে না
+      const threadID = event.threadID;
+      const data = event.logMessageData || {};
+
+      const leftID = data.leftParticipantFbId;
+      const author = event.author;
+
+      // UID না পাওয়া গেলে কিছু করবে না
+      if (!leftID) return;
+
+      /*
+       * নিজে leave করলে:
+       * leftParticipantFbId === author
+       *
+       * অন্য কেউ kick করলে:
+       * author !== leftParticipantFbId
+       */
+      if (String(leftID) !== String(author)) return;
+
+      // Leave করা user-কে আবার add করার চেষ্টা
+      await api.addUserToGroup(
+        String(leftID),
+        threadID
+      );
+
+      // সফল হলেও কোনো message/reply নয়
       return;
-    } catch (err) {
-      // Add করা সম্ভব না হলেও কোনো error message পাঠাবে না
+
+    } catch (error) {
+      // Failed হলেও কোনো message নয়
+      console.error(
+        "[AUTOINVITE] Add failed:",
+        error?.message || error
+      );
+
       return;
     }
   }
