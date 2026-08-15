@@ -6,13 +6,13 @@ const path = require("path");
 module.exports = {
     config: {
         name: "prefix",
-        version: "1.0.0",
+        version: "3.0.0",
         author: "Mohammad Maruf",
         countDown: 5,
         role: 0,
 
         description: {
-            en: "Show and change the bot prefix."
+            en: "Show or change bot prefix."
         },
 
         category: "config",
@@ -21,16 +21,23 @@ module.exports = {
             en:
                 "{pn}\n" +
                 "{pn} <new prefix>\n" +
-                "Example: {pn} .\n\n" +
                 "{pn} <new prefix> -g\n" +
-                "Example: {pn} . -g\n\n" +
-                "{pn} reset\n\n" +
-                "Type 'prefix' to view current prefix information."
+                "{pn} reset"
         }
     },
 
     langs: {
         en: {
+            info: `🛠️ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢
+
+🎟️ 𝗚𝗿𝗼𝘂𝗽       : %1
+📡 𝗦𝘆𝘀𝘁𝗲𝗺      : %2
+🔹 𝗧𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 : %3
+🎛️ 𝗧𝘆𝗽𝗲       : %4
+
+💎 𝗧𝘆𝗽𝗲
+➤ %3help`,
+
             reset:
                 "✅ 𝗣𝗿𝗲𝗳𝗶𝘅 𝗥𝗲𝘀𝗲𝘁\n\n" +
                 "🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
@@ -42,15 +49,15 @@ module.exports = {
 
             confirmGlobal:
                 "⚠️ 𝗚𝗹𝗼𝗯𝗮𝗹 𝗣𝗿𝗲𝗳𝗶𝘅 𝗖𝗵𝗮𝗻𝗴𝗲\n\n" +
-                "📡 𝗢𝗹𝗱 𝗣𝗿𝗲𝗳𝗶𝘅 : %1\n" +
-                "🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2\n\n" +
-                "💎 React to this message to confirm.",
+                "📡 𝗖𝘂𝗿𝗿𝗲𝗻𝘁 : %1\n" +
+                "🔹 𝗡𝗲𝘄 : %2\n\n" +
+                "💎 React to confirm.",
 
             confirmThisThread:
                 "⚠️ 𝗚𝗿𝗼𝘂𝗽 𝗣𝗿𝗲𝗳𝗶𝘅 𝗖𝗵𝗮𝗻𝗴𝗲\n\n" +
                 "🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
-                "🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2\n\n" +
-                "💎 React to this message to confirm.",
+                "🔹 𝗡𝗲𝘄 : %2\n\n" +
+                "💎 React to confirm.",
 
             successGlobal:
                 "✅ 𝗦𝘆𝘀𝘁𝗲𝗺 𝗣𝗿𝗲𝗳𝗶𝘅 𝗨𝗽𝗱𝗮𝘁𝗲𝗱\n\n" +
@@ -63,10 +70,6 @@ module.exports = {
         }
     },
 
-    /* =========================================
-       COMMAND HANDLER
-    ========================================= */
-
     onStart: async function ({
         message,
         role,
@@ -78,25 +81,49 @@ module.exports = {
     }) {
 
         /*
-         * /prefix
-         *
-         * No argument = Prefix Info
+         * =====================================
+         * শুধু "prefix" / "/prefix" লিখলে
+         * PREFIX INFO দেখাবে
+         * =====================================
          */
 
         if (!args[0]) {
+
+            const systemPrefix =
+                global.GoatBot.config.prefix;
+
+            const groupPrefix =
+                utils.getPrefix(event.threadID);
+
+            const type =
+                groupPrefix === systemPrefix
+                    ? "Default"
+                    : "Custom";
+
+            let groupName = "This Group";
+
+            try {
+                groupName =
+                    await getThreadName(event.threadID);
+            } catch (_) {}
+
             return sendPrefixInfo({
                 message,
-                event
+                event,
+                groupName,
+                systemPrefix,
+                groupPrefix,
+                type
             });
         }
 
-        /* =====================================
-           RESET
-        ===================================== */
+        /*
+         * =====================================
+         * RESET
+         * =====================================
+         */
 
-        if (
-            args[0].toLowerCase() === "reset"
-        ) {
+        if (args[0].toLowerCase() === "reset") {
 
             await threadsData.set(
                 event.threadID,
@@ -104,27 +131,20 @@ module.exports = {
                 "data.prefix"
             );
 
-            let groupName = "This Group";
-
-            try {
-                groupName =
-                    await getThreadName(
-                        event.threadID
-                    );
-            } catch (_) {}
-
             return message.reply(
                 getLang(
                     "reset",
-                    groupName,
+                    await getThreadName(event.threadID),
                     global.GoatBot.config.prefix
                 )
             );
         }
 
-        /* =====================================
-           NEW PREFIX
-        ===================================== */
+        /*
+         * =====================================
+         * NEW PREFIX
+         * =====================================
+         */
 
         const newPrefix = args[0];
 
@@ -136,14 +156,13 @@ module.exports = {
             setGlobal: false
         };
 
-        /* =====================================
-           GLOBAL PREFIX
-        ===================================== */
+        /*
+         * =====================================
+         * GLOBAL PREFIX
+         * =====================================
+         */
 
-        if (
-            args[1] &&
-            args[1].toLowerCase() === "-g"
-        ) {
+        if (args[1] === "-g") {
 
             if (role < 2) {
                 return message.reply(
@@ -161,8 +180,7 @@ module.exports = {
                 ),
                 (err, info) => {
 
-                    if (err || !info)
-                        return;
+                    if (err || !info) return;
 
                     formSet.messageID =
                         info.messageID;
@@ -175,17 +193,17 @@ module.exports = {
             );
         }
 
-        /* =====================================
-           GROUP PREFIX
-        ===================================== */
+        /*
+         * =====================================
+         * GROUP PREFIX
+         * =====================================
+         */
 
         let groupName = "This Group";
 
         try {
             groupName =
-                await getThreadName(
-                    event.threadID
-                );
+                await getThreadName(event.threadID);
         } catch (_) {}
 
         return message.reply(
@@ -196,8 +214,7 @@ module.exports = {
             ),
             (err, info) => {
 
-                if (err || !info)
-                    return;
+                if (err || !info) return;
 
                 formSet.messageID =
                     info.messageID;
@@ -210,9 +227,11 @@ module.exports = {
         );
     },
 
-    /* =========================================
-       REACTION CONFIRMATION
-    ========================================= */
+    /*
+     * =====================================
+     * REACTION CONFIRM
+     * =====================================
+     */
 
     onReaction: async function ({
         message,
@@ -222,26 +241,18 @@ module.exports = {
         getLang
     }) {
 
-        if (!Reaction)
-            return;
-
         const {
             author,
             newPrefix,
             setGlobal
         } = Reaction;
 
-        /* Only original user can confirm */
-
-        if (
-            event.userID !== author
-        ) {
+        if (event.userID !== author)
             return;
-        }
 
-        /* =====================================
-           GLOBAL PREFIX
-        ===================================== */
+        /*
+         * GLOBAL
+         */
 
         if (setGlobal) {
 
@@ -275,9 +286,9 @@ module.exports = {
             );
         }
 
-        /* =====================================
-           GROUP PREFIX
-        ===================================== */
+        /*
+         * GROUP
+         */
 
         await threadsData.set(
             event.threadID,
@@ -288,12 +299,8 @@ module.exports = {
         let groupName = "This Group";
 
         try {
-
             groupName =
-                await getThreadName(
-                    event.threadID
-                );
-
+                await getThreadName(event.threadID);
         } catch (_) {}
 
         return message.reply(
@@ -303,113 +310,38 @@ module.exports = {
                 newPrefix
             )
         );
-    },
-
-    /* =========================================
-       PLAIN "prefix" HANDLER
-       
-       IMPORTANT:
-       This handles only:
-       
-       prefix
-       
-       It does NOT handle:
-       
-       /prefix
-       
-       Therefore duplicate response হবে না।
-    ========================================= */
-
-    onChat: async function ({
-        event,
-        message
-    }) {
-
-        if (!event.body)
-            return;
-
-        const text =
-            event.body.trim().toLowerCase();
-
-        /*
-         * Only exact "prefix"
-         */
-
-        if (text !== "prefix")
-            return;
-
-        /*
-         * Small guard.
-         *
-         * If this message has already been
-         * processed as a command, don't reply.
-         */
-
-        if (
-            event.messageReply ||
-            event.attachments?.length
-        ) {
-            return;
-        }
-
-        return sendPrefixInfo({
-            message,
-            event
-        });
     }
 };
 
 
-/* =========================================
-   PREFIX INFO FUNCTION
-========================================= */
+/*
+ * =====================================
+ * PREFIX INFO
+ * =====================================
+ */
 
 async function sendPrefixInfo({
     message,
-    event
+    event,
+    groupName,
+    systemPrefix,
+    groupPrefix,
+    type
 }) {
 
-    try {
+    const time =
+        new Date().toLocaleTimeString(
+            "en-US",
+            {
+                timeZone: "Asia/Dhaka",
+                hour12: true,
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            }
+        );
 
-        let groupName = "This Group";
-
-        try {
-
-            groupName =
-                await getThreadName(
-                    event.threadID
-                );
-
-        } catch (_) {}
-
-        const systemPrefix =
-            global.GoatBot.config.prefix;
-
-        const groupPrefix =
-            utils.getPrefix(
-                event.threadID
-            );
-
-        const type =
-            groupPrefix === systemPrefix
-                ? "Default"
-                : "Custom";
-
-        /* Bangladesh Time */
-
-        const time =
-            new Date().toLocaleTimeString(
-                "en-US",
-                {
-                    timeZone: "Asia/Dhaka",
-                    hour12: true,
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit"
-                }
-            );
-
-        const msg =
+    const msg =
 `🛠️ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢
 
 🎟️ 𝗚𝗿𝗼𝘂𝗽       : ${groupName}
@@ -421,132 +353,81 @@ async function sendPrefixInfo({
 💎 𝗧𝘆𝗽𝗲
 ➤ ${groupPrefix}help`;
 
-        /* =====================================
-           IMAGE
-        ===================================== */
+    /*
+     * =====================================
+     * IMAGE
+     * =====================================
+     */
 
-        const imageURL =
-            "https://i.ibb.co/LXxrL0Xz/c40358933642.jpg";
+    const imageURL =
+        "https://i.ibb.co/LXxrL0Xz/c40358933642.jpg";
 
-        const cacheDir =
-            path.join(
-                __dirname,
-                "cache"
-            );
+    const cacheDir =
+        path.join(__dirname, "cache");
 
-        await fs.ensureDir(
-            cacheDir
+    const imagePath =
+        path.join(
+            cacheDir,
+            `prefix_${Date.now()}.jpg`
         );
 
-        const imagePath =
-            path.join(
-                cacheDir,
-                `prefix_${Date.now()}.jpg`
+    try {
+
+        await fs.ensureDir(cacheDir);
+
+        const response =
+            await axios.get(
+                imageURL,
+                {
+                    responseType: "arraybuffer",
+                    timeout: 15000
+                }
             );
 
-        try {
+        await fs.writeFile(
+            imagePath,
+            response.data
+        );
 
-            const response =
-                await axios.get(
-                    imageURL,
-                    {
-                        responseType:
-                            "arraybuffer",
-                        timeout: 15000
-                    }
-                );
+        await message.reply({
+            body: msg,
+            attachment:
+                fs.createReadStream(imagePath)
+        });
 
-            await fs.writeFile(
-                imagePath,
-                response.data
-            );
+        setTimeout(() => {
 
-            await message.reply({
-                body: msg,
-                attachment:
-                    fs.createReadStream(
-                        imagePath
-                    )
-            });
+            try {
 
-            /* Delete cached image */
+                if (
+                    fs.existsSync(imagePath)
+                ) {
+                    fs.unlinkSync(imagePath);
+                }
 
-            setTimeout(() => {
+            } catch (_) {}
 
-                try {
-
-                    if (
-                        fs.existsSync(
-                            imagePath
-                        )
-                    ) {
-                        fs.unlinkSync(
-                            imagePath
-                        );
-                    }
-
-                } catch (_) {}
-
-            }, 15000);
-
-        } catch (imageError) {
-
-            console.error(
-                "PREFIX IMAGE ERROR:",
-                imageError.message
-            );
-
-            return message.reply(
-                msg
-            );
-        }
+        }, 15000);
 
     } catch (error) {
 
         console.error(
-            "PREFIX INFO ERROR:",
-            error
+            "PREFIX IMAGE ERROR:",
+            error.message
         );
 
-        const currentPrefix =
-            global.GoatBot.config.prefix;
-
-        let groupPrefix = currentPrefix;
-
-        try {
-
-            groupPrefix =
-                utils.getPrefix(
-                    event.threadID
-                );
-
-        } catch (_) {}
-
-        return message.reply(
-`🛠️ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢
-
-📡 𝗦𝘆𝘀𝘁𝗲𝗺      : ${currentPrefix}
-🔹 𝗧𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 : ${groupPrefix}
-🎛️ 𝗧𝘆𝗽𝗲       : ${
-    groupPrefix === currentPrefix
-        ? "Default"
-        : "Custom"
-}
-
-💎 𝗧𝘆𝗽𝗲
-➤ ${groupPrefix}help`
-        );
+        return message.reply(msg);
     }
 }
 
 
-/* =========================================
-   GET GROUP NAME
-========================================= */
+/*
+ * =====================================
+ * GET GROUP NAME
+ * =====================================
+ */
 
-async function getThreadName(
-    threadID
-) {
+async function getThreadName(threadID) {
 
     try {
 
