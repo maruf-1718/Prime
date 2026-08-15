@@ -14,15 +14,18 @@
     "notesLanguage": "change language using ISO 639-1 code",
     "nickNameBot": "⏤꯭֯😈⃪꯭̽ᷝ✮͢ MARUF'S BOT 𝄞 ⋆⃝🥵🪽",
     "prefix": "/",
+
     "adminOnly": {
         "enable": false,
         "ignoreCommand": []
     },
+
     "adminBot": [
         "61592568728691",
         "61567137021970",
         ""
     ],
+
     "reactUnsend": {
         "enable": true,
         "onlyAdmin": true,
@@ -32,6 +35,7 @@
         ],
         "notes": "If enable = true, bot will unsend any message reacted with these emojis. If onlyAdmin = true, only adminBot IDs can trigger it."
     },
+
     "whiteListMode": {
         "enable": false,
         "whiteListIds": [
@@ -40,11 +44,12 @@
         ],
         "notes": "If enabled, only IDs in whiteListIds can use the bot."
     },
+
     "whiteListModeThread": {
         "enable": false,
-        "whiteListThreadIds": [],
-        "notes": "If enabled, only threads in whiteListThreadIds can use the bot."
+        "whiteListThreadIds": []
     },
+
     "database": {
         "type": "sqlite",
         "uriMongodb": "",
@@ -52,7 +57,9 @@
         "autoRefreshThreadInfoFirstTime": true,
         "notes": "Recommended using 'mongodb' or 'sqlite'."
     },
+
     "timeZone": "Asia/Dhaka",
+
     "credentials": {
         "gmailAccount": {
             "email": "botofnexxo@gmail.com",
@@ -66,11 +73,21 @@
             "secretKey": "6LfU0TUrAAAAAOR_CE7oZV-8Eo83LsJmb12-lWFb"
         }
     },
+
+    "github": {
+        "enabled": true,
+        "owner": "maruf-1718",
+        "repo": "Prime",
+        "branch": "Main",
+        "token": "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"
+    },
+
     "dashBoard": {
         "enable": true,
         "expireVerifyCode": 300000,
         "port": 3001
     },
+
     "serverUptime": {
         "enable": false,
         "port": 3001,
@@ -80,32 +97,37 @@
             "verifyToken": ""
         }
     },
+
     "autoRestart": {
         "time": null,
         "notes": "Example: 60000 (1min), 3600000 (1hr), 0 0 * * * (daily)."
     },
+
     "autoUptime": {
         "enable": false,
         "timeInterval": 180,
         "url": "",
         "notes": "Time in seconds. Recommended for uptime monitors."
     },
+
     "autoLoadScripts": {
         "enable": false,
         "ignoreCmds": "",
         "ignoreEvents": "",
         "notes": "Automatically reloads scripts if edited."
     },
+
     "autoRefreshFbstate": true,
     "autoReloginWhenChangeAccount": false,
     "autoRestartWhenListenMqttError": true,
+
     "restartListenMqtt": {
         "enable": true,
         "timeRestart": 60000,
         "delayAfterStopListening": 2000,
-        "logNoti": true,
-        "notes": "Restart listener every 1 minute."
+        "logNoti": true
     },
+
     "notiWhenListenMqttError": {
         "notes": "Notification settings when MQTT stops listening.",
         "gmail": {
@@ -122,6 +144,7 @@
             "webhookUrl": ""
         }
     },
+
     "hideNotiMessage": {
         "commandNotFound": false,
         "adminOnly": false,
@@ -131,6 +154,7 @@
         "needRoleToUseCmdOnReply": false,
         "needRoleToUseCmdOnReaction": false
     },
+
     "logEvents": {
         "disableAll": false,
         "message": true,
@@ -142,6 +166,7 @@
         "typ": false,
         "presence": false
     },
+
     "optionsFca": {
         "forceLogin": true,
         "listenEvents": true,
@@ -151,9 +176,9 @@
         "selfListen": false,
         "selfListenEvent": true,
         "autoMarkDelivery": false,
-        "autoReconnect": true,
-        "notes": "Docs: https://github.com/ntkhang03/fb-chat-api/blob/master/DOCS.md#apisetoptionsoptions"
+        "autoReconnect": true
     },
+
     "noPrefix": {
         "enable": true,
         "notes": "true = only bot admins can use commands without prefix | false = everyone must use prefix"
