@@ -4,317 +4,111 @@ const axios = require("axios");
 const path = require("path");
 
 module.exports = {
-	config: {
-		name: "prefix",
-		version: "2.0.0",
-		author: "Mohammad Maruf",
-		countDown: 5,
-		role: 0,
+    config: {
+        name: "prefix",
+        version: "2.0.0",
+        author: "Mohammad Maruf",
+        countDown: 5,
+        role: 0,
 
-		description: {
-			en: "Change the bot prefix for this group or globally."
-		},
+        description: {
+            en: "Change the bot prefix for this group or globally."
+        },
 
-		category: "config",
+        category: "config",
 
-		guide: {
-			en:
-				"{pn} <new prefix>\n" +
-				"Example: {pn} .\n\n" +
-				"{pn} <new prefix> -g\n" +
-				"Example: {pn} . -g\n\n" +
-				"{pn} reset\n\n" +
-				"Type 'prefix' to view current prefix information."
-		}
-	},
+        guide: {
+            en:
+                "{pn}\n" +
+                "{pn} <new prefix>\n" +
+                "Example: {pn} .\n\n" +
+                "{pn} <new prefix> -g\n" +
+                "Example: {pn} . -g\n\n" +
+                "{pn} reset\n\n" +
+                "Type 'prefix' to view current prefix information."
+        }
+    },
 
-	langs: {
-		en: {
-			reset:
-				"✅ 𝗣𝗿𝗲𝗳𝗶𝘅 𝗥𝗲𝘀𝗲𝘁\n\n" +
-				"🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
-				"🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2",
+    langs: {
+        en: {
+            reset:
+                "✅ 𝗣𝗿𝗲𝗳𝗶𝘅 𝗥𝗲𝘀𝗲𝘁\n\n" +
+                "🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
+                "🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2",
 
-			onlyAdmin:
-				"❌ 𝗔𝗰𝗰𝗲𝘀𝘀 𝗗𝗲𝗻𝗶𝗲𝗱\n\n" +
-				"🎛️ Only bot administrators can change the system prefix.",
+            onlyAdmin:
+                "❌ 𝗔𝗰𝗰𝗲𝘀𝘀 𝗗𝗲𝗻𝗶𝗲𝗱\n\n" +
+                "🎛️ Only bot administrators can change the system prefix.",
 
-			confirmGlobal:
-				"⚠️ 𝗚𝗹𝗼𝗯𝗮𝗹 𝗣𝗿𝗲𝗳𝗶𝘅 𝗖𝗵𝗮𝗻𝗴𝗲\n\n" +
-				"📡 𝗦𝘆𝘀𝘁𝗲𝗺 : %1\n" +
-				"🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2\n\n" +
-				"💎 React to this message to confirm.",
+            confirmGlobal:
+                "⚠️ 𝗚𝗹𝗼𝗯𝗮𝗹 𝗣𝗿𝗲𝗳𝗶𝘅 𝗖𝗵𝗮𝗻𝗴𝗲\n\n" +
+                "📡 𝗦𝘆𝘀𝘁𝗲𝗺 : %1\n" +
+                "🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2\n\n" +
+                "💎 React to this message to confirm.",
 
-			confirmThisThread:
-				"⚠️ 𝗚𝗿𝗼𝘂𝗽 𝗣𝗿𝗲𝗳𝗶𝘅 𝗖𝗵𝗮𝗻𝗴𝗲\n\n" +
-				"🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
-				"🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2\n\n" +
-				"💎 React to this message to confirm.",
+            confirmThisThread:
+                "⚠️ 𝗚𝗿𝗼𝘂𝗽 𝗣𝗿𝗲𝗳𝗶𝘅 𝗖𝗵𝗮𝗻𝗴𝗲\n\n" +
+                "🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
+                "🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2\n\n" +
+                "💎 React to this message to confirm.",
 
-			successGlobal:
-				"✅ 𝗦𝘆𝘀𝘁𝗲𝗺 𝗣𝗿𝗲𝗳𝗶𝘅 𝗨𝗽𝗱𝗮𝘁𝗲𝗱\n\n" +
-				"📡 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %1",
+            successGlobal:
+                "✅ 𝗦𝘆𝘀𝘁𝗲𝗺 𝗣𝗿𝗲𝗳𝗶𝘅 𝗨𝗽𝗱𝗮𝘁𝗲𝗱\n\n" +
+                "📡 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %1",
 
-			successThisThread:
-				"✅ 𝗚𝗿𝗼𝘂𝗽 𝗣𝗿𝗲𝗳𝗶𝘅 𝗨𝗽𝗱𝗮𝘁𝗲𝗱\n\n" +
-				"🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
-				"🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2"
-		}
-	},
+            successThisThread:
+                "✅ 𝗚𝗿𝗼𝘂𝗽 𝗣𝗿𝗲𝗳𝗶𝘅 𝗨𝗽𝗱𝗮𝘁𝗲𝗱\n\n" +
+                "🎟️ 𝗚𝗿𝗼𝘂𝗽 : %1\n" +
+                "🔹 𝗡𝗲𝘄 𝗣𝗿𝗲𝗳𝗶𝘅 : %2"
+        }
+    },
 
-	onStart: async function ({
-		message,
-		role,
-		args,
-		commandName,
-		event,
-		threadsData,
-		getLang
-	}) {
+    onStart: async function ({
+        message,
+        role,
+        args,
+        commandName,
+        event,
+        threadsData,
+        getLang
+    }) {
 
-		/* =========================
-		   NO ARGUMENT
-		========================= */
+        /* =========================
+           PREFIX INFO
+        ========================= */
 
-		if (!args[0]) {
-			return message.SyntaxError();
-		}
+        if (!args[0]) {
 
-		/* =========================
-		   RESET GROUP PREFIX
-		========================= */
+            let groupName = "This Group";
 
-		if (args[0].toLowerCase() === "reset") {
+            try {
+                groupName = await getThreadName(event.threadID);
+            } catch (_) {}
 
-			await threadsData.set(
-				event.threadID,
-				null,
-				"data.prefix"
-			);
+            const systemPrefix =
+                global.GoatBot.config.prefix;
 
-			return message.reply(
-				getLang(
-					"reset",
-					await getThreadName(event.threadID),
-					global.GoatBot.config.prefix
-				)
-			);
-		}
+            const groupPrefix =
+                utils.getPrefix(event.threadID);
 
-		/* =========================
-		   NEW PREFIX
-		========================= */
+            const type =
+                groupPrefix === systemPrefix
+                    ? "Default"
+                    : "Custom";
 
-		const newPrefix = args[0];
+            const time =
+                new Date().toLocaleTimeString(
+                    "en-US",
+                    {
+                        timeZone: "Asia/Dhaka",
+                        hour12: true,
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"
+                    }
+                );
 
-		const formSet = {
-			commandName,
-			author: event.senderID,
-			newPrefix,
-			messageID: null,
-			setGlobal: false
-		};
-
-		/* =========================
-		   GLOBAL PREFIX
-		========================= */
-
-		if (args[1] === "-g") {
-
-			if (role < 2) {
-				return message.reply(
-					getLang("onlyAdmin")
-				);
-			}
-
-			formSet.setGlobal = true;
-
-			return message.reply(
-				getLang(
-					"confirmGlobal",
-					global.GoatBot.config.prefix,
-					newPrefix
-				),
-				(err, info) => {
-
-					if (err || !info) return;
-
-					formSet.messageID =
-						info.messageID;
-
-					global.GoatBot.onReaction.set(
-						info.messageID,
-						formSet
-					);
-				}
-			);
-		}
-
-		/* =========================
-		   GROUP PREFIX
-		========================= */
-
-		let groupName = "This Group";
-
-		try {
-			groupName = await getThreadName(
-				event.threadID
-			);
-		} catch (_) {}
-
-		return message.reply(
-			getLang(
-				"confirmThisThread",
-				groupName,
-				newPrefix
-			),
-			(err, info) => {
-
-				if (err || !info) return;
-
-				formSet.messageID =
-					info.messageID;
-
-				global.GoatBot.onReaction.set(
-					info.messageID,
-					formSet
-				);
-			}
-		);
-	},
-
-	/* =========================
-	   CONFIRM REACTION
-	========================= */
-
-	onReaction: async function ({
-		message,
-		threadsData,
-		event,
-		Reaction,
-		getLang
-	}) {
-
-		const {
-			author,
-			newPrefix,
-			setGlobal
-		} = Reaction;
-
-		// Only command user can confirm
-		if (event.userID !== author)
-			return;
-
-		/* =========================
-		   GLOBAL PREFIX
-		========================= */
-
-		if (setGlobal) {
-
-			global.GoatBot.config.prefix =
-				newPrefix;
-
-			try {
-				fs.writeFileSync(
-					global.client.dirConfig,
-					JSON.stringify(
-						global.GoatBot.config,
-						null,
-						2
-					)
-				);
-			} catch (err) {
-				console.error(
-					"Failed to save global prefix:",
-					err
-				);
-			}
-
-			return message.reply(
-				getLang(
-					"successGlobal",
-					newPrefix
-				)
-			);
-		}
-
-		/* =========================
-		   GROUP PREFIX
-		========================= */
-
-		await threadsData.set(
-			event.threadID,
-			newPrefix,
-			"data.prefix"
-		);
-
-		let groupName = "This Group";
-
-		try {
-			groupName = await getThreadName(
-				event.threadID
-			);
-		} catch (_) {}
-
-		return message.reply(
-			getLang(
-				"successThisThread",
-				groupName,
-				newPrefix
-			)
-		);
-	},
-
-	/* =========================
-	   PREFIX INFO
-	========================= */
-
-	onChat: async function ({
-		event,
-		message
-	}) {
-
-		if (
-			!event.body ||
-			event.body.trim().toLowerCase() !== "prefix"
-		) {
-			return;
-		}
-
-		try {
-
-			const groupName =
-				await getThreadName(
-					event.threadID
-				);
-
-			const systemPrefix =
-				global.GoatBot.config.prefix;
-
-			const groupPrefix =
-				utils.getPrefix(
-					event.threadID
-				);
-
-			const type =
-				groupPrefix === systemPrefix
-					? "Default"
-					: "Custom";
-
-			/* Bangladesh Time */
-
-			const time = new Date().toLocaleTimeString(
-				"en-US",
-				{
-					timeZone: "Asia/Dhaka",
-					hour12: true,
-					hour: "2-digit",
-					minute: "2-digit",
-					second: "2-digit"
-				}
-			);
-
-			const msg =
+            const msg =
 `🛠️ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢
 
 🎟️ 𝗚𝗿𝗼𝘂𝗽       : ${groupName}
@@ -326,65 +120,392 @@ module.exports = {
 💎 𝗧𝘆𝗽𝗲
 ➤ ${groupPrefix}help`;
 
-			/* =========================
-			   YOUR IMGBB IMAGE
-			========================= */
+            /* =========================
+               YOUR IMGBB IMAGE
+            ========================= */
 
-			const imageURL =
-				"https://i.ibb.co/LXxrL0Xz/c40358933642.jpg";
+            const imageURL =
+                "https://i.ibb.co/LXxrL0Xz/c40358933642.jpg";
 
-			const cacheDir =
-				path.join(__dirname, "cache");
+            const cacheDir =
+                path.join(__dirname, "cache");
 
-			await fs.ensureDir(cacheDir);
+            const imagePath =
+                path.join(
+                    cacheDir,
+                    `prefix_${Date.now()}.jpg`
+                );
 
-			const imagePath =
-				path.join(
-					cacheDir,
-					`prefix_${Date.now()}.jpg`
-				);
+            try {
 
-			const response =
-				await axios.get(
-					imageURL,
-					{
-						responseType: "arraybuffer",
-						timeout: 15000
-					}
-				);
+                await fs.ensureDir(cacheDir);
 
-			await fs.writeFile(
-				imagePath,
-				response.data
-			);
+                const response =
+                    await axios.get(
+                        imageURL,
+                        {
+                            responseType: "arraybuffer",
+                            timeout: 15000
+                        }
+                    );
 
-			await message.reply({
-				body: msg,
-				attachment: fs.createReadStream(
-					imagePath
-				)
-			});
+                await fs.writeFile(
+                    imagePath,
+                    response.data
+                );
 
-			/* Delete cached image after 15 seconds */
+                await message.reply({
+                    body: msg,
+                    attachment:
+                        fs.createReadStream(imagePath)
+                });
 
-			setTimeout(() => {
+                /* Delete cached image after 15 seconds */
 
-				if (fs.existsSync(imagePath)) {
-					fs.unlinkSync(imagePath);
-				}
+                setTimeout(() => {
 
-			}, 15000);
+                    try {
+                        if (fs.existsSync(imagePath)) {
+                            fs.unlinkSync(imagePath);
+                        }
+                    } catch (_) {}
 
-			return;
+                }, 15000);
 
-		} catch (error) {
+            } catch (error) {
 
-			console.error(
-				"PREFIX INFO ERROR:",
-				error
-			);
+                console.error(
+                    "PREFIX IMAGE ERROR:",
+                    error.message
+                );
 
-			return message.reply(
+                return message.reply(msg);
+            }
+
+            return;
+        }
+
+        /* =========================
+           RESET GROUP PREFIX
+        ========================= */
+
+        if (
+            args[0].toLowerCase() === "reset"
+        ) {
+
+            await threadsData.set(
+                event.threadID,
+                null,
+                "data.prefix"
+            );
+
+            return message.reply(
+                getLang(
+                    "reset",
+                    await getThreadName(
+                        event.threadID
+                    ),
+                    global.GoatBot.config.prefix
+                )
+            );
+        }
+
+        /* =========================
+           NEW PREFIX
+        ========================= */
+
+        const newPrefix = args[0];
+
+        const formSet = {
+            commandName,
+            author: event.senderID,
+            newPrefix,
+            messageID: null,
+            setGlobal: false
+        };
+
+        /* =========================
+           GLOBAL PREFIX
+        ========================= */
+
+        if (args[1] === "-g") {
+
+            if (role < 2) {
+                return message.reply(
+                    getLang("onlyAdmin")
+                );
+            }
+
+            formSet.setGlobal = true;
+
+            return message.reply(
+                getLang(
+                    "confirmGlobal",
+                    global.GoatBot.config.prefix,
+                    newPrefix
+                ),
+                (err, info) => {
+
+                    if (err || !info) return;
+
+                    formSet.messageID =
+                        info.messageID;
+
+                    global.GoatBot.onReaction.set(
+                        info.messageID,
+                        formSet
+                    );
+                }
+            );
+        }
+
+        /* =========================
+           GROUP PREFIX
+        ========================= */
+
+        let groupName = "This Group";
+
+        try {
+            groupName =
+                await getThreadName(
+                    event.threadID
+                );
+        } catch (_) {}
+
+        return message.reply(
+            getLang(
+                "confirmThisThread",
+                groupName,
+                newPrefix
+            ),
+            (err, info) => {
+
+                if (err || !info) return;
+
+                formSet.messageID =
+                    info.messageID;
+
+                global.GoatBot.onReaction.set(
+                    info.messageID,
+                    formSet
+                );
+            }
+        );
+    },
+
+    /* =========================
+       CONFIRM REACTION
+    ========================= */
+
+    onReaction: async function ({
+        message,
+        threadsData,
+        event,
+        Reaction,
+        getLang
+    }) {
+
+        const {
+            author,
+            newPrefix,
+            setGlobal
+        } = Reaction;
+
+        /* Only command user can confirm */
+
+        if (event.userID !== author)
+            return;
+
+        /* =========================
+           GLOBAL PREFIX
+        ========================= */
+
+        if (setGlobal) {
+
+            global.GoatBot.config.prefix =
+                newPrefix;
+
+            try {
+
+                fs.writeFileSync(
+                    global.client.dirConfig,
+                    JSON.stringify(
+                        global.GoatBot.config,
+                        null,
+                        2
+                    )
+                );
+
+            } catch (err) {
+
+                console.error(
+                    "Failed to save global prefix:",
+                    err
+                );
+            }
+
+            return message.reply(
+                getLang(
+                    "successGlobal",
+                    newPrefix
+                )
+            );
+        }
+
+        /* =========================
+           GROUP PREFIX
+        ========================= */
+
+        await threadsData.set(
+            event.threadID,
+            newPrefix,
+            "data.prefix"
+        );
+
+        let groupName = "This Group";
+
+        try {
+
+            groupName =
+                await getThreadName(
+                    event.threadID
+                );
+
+        } catch (_) {}
+
+        return message.reply(
+            getLang(
+                "successThisThread",
+                groupName,
+                newPrefix
+            )
+        );
+    },
+
+    /* =========================
+       PREFIX INFO WITHOUT PREFIX
+    ========================= */
+
+    onChat: async function ({
+        event,
+        message
+    }) {
+
+        if (
+            !event.body ||
+            event.body.trim().toLowerCase() !== "prefix"
+        ) {
+            return;
+        }
+
+        try {
+
+            const groupName =
+                await getThreadName(
+                    event.threadID
+                );
+
+            const systemPrefix =
+                global.GoatBot.config.prefix;
+
+            const groupPrefix =
+                utils.getPrefix(
+                    event.threadID
+                );
+
+            const type =
+                groupPrefix === systemPrefix
+                    ? "Default"
+                    : "Custom";
+
+            /* Bangladesh Time */
+
+            const time =
+                new Date().toLocaleTimeString(
+                    "en-US",
+                    {
+                        timeZone: "Asia/Dhaka",
+                        hour12: true,
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"
+                    }
+                );
+
+            const msg =
+`🛠️ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢
+
+🎟️ 𝗚𝗿𝗼𝘂𝗽       : ${groupName}
+📡 𝗦𝘆𝘀𝘁𝗲𝗺      : ${systemPrefix}
+🔹 𝗧𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 : ${groupPrefix}
+🎛️ 𝗧𝘆𝗽𝗲       : ${type}
+⏱️ 𝗧𝗶𝗺𝗲        : ${time}
+
+💎 𝗧𝘆𝗽𝗲
+➤ ${groupPrefix}help`;
+
+            /* =========================
+               YOUR IMGBB IMAGE
+            ========================= */
+
+            const imageURL =
+                "https://i.ibb.co/LXxrL0Xz/c40358933642.jpg";
+
+            const cacheDir =
+                path.join(__dirname, "cache");
+
+            await fs.ensureDir(cacheDir);
+
+            const imagePath =
+                path.join(
+                    cacheDir,
+                    `prefix_${Date.now()}.jpg`
+                );
+
+            const response =
+                await axios.get(
+                    imageURL,
+                    {
+                        responseType: "arraybuffer",
+                        timeout: 15000
+                    }
+                );
+
+            await fs.writeFile(
+                imagePath,
+                response.data
+            );
+
+            await message.reply({
+                body: msg,
+                attachment:
+                    fs.createReadStream(imagePath)
+            });
+
+            /* Delete cached image */
+
+            setTimeout(() => {
+
+                try {
+
+                    if (fs.existsSync(imagePath)) {
+                        fs.unlinkSync(imagePath);
+                    }
+
+                } catch (_) {}
+
+            }, 15000);
+
+            return;
+
+        } catch (error) {
+
+            console.error(
+                "PREFIX INFO ERROR:",
+                error
+            );
+
+            return message.reply(
 `🛠️ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢
 
 📡 𝗦𝘆𝘀𝘁𝗲𝗺      : ${global.GoatBot.config.prefix}
@@ -393,9 +514,9 @@ module.exports = {
 
 💎 𝗧𝘆𝗽𝗲
 ➤ ${utils.getPrefix(event.threadID)}help`
-			);
-		}
-	}
+            );
+        }
+    }
 };
 
 
@@ -405,21 +526,20 @@ module.exports = {
 
 async function getThreadName(threadID) {
 
-	try {
+    try {
 
-		// GoatBot thread data
-		const threadInfo =
-			await global.GoatBot.fcaApi.getThreadInfo(
-				threadID
-			);
+        const threadInfo =
+            await global.GoatBot.fcaApi.getThreadInfo(
+                threadID
+            );
 
-		return (
-			threadInfo?.name ||
-			"This Group"
-		);
+        return (
+            threadInfo?.name ||
+            "This Group"
+        );
 
-	} catch (_) {
+    } catch (_) {
 
-		return "This Group";
-	}
+        return "This Group";
+    }
 }
