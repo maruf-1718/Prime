@@ -585,8 +585,8 @@ module.exports = {
     ===================================================== */
 
     if (
-      cmd === "add" &&
-      args[1]?.toLowerCase() === "ev"
+      cmd === "ev" &&
+      args[1]?.toLowerCase() === "add"
     ) {
 
       return message.reply(
