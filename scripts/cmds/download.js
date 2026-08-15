@@ -2,9 +2,10 @@ const fs = require("fs");
 const { downloadVideo } = require("sagor-video-downloader");
 
 module.exports = {
+
   config: {
     name: "download",
-    version: "3.0",
+    version: "1.0.0",
     author: "Mohammad Maruf",
     countDown: 5,
     role: 0,
@@ -14,7 +15,7 @@ module.exports = {
     },
 
     longDescription: {
-      en: "Download Facebook and TikTok videos by link or reply"
+      en: "Download Facebook and TikTok videos by direct link or reply"
     },
 
     category: "media",
@@ -30,7 +31,11 @@ module.exports = {
      REACTION
   ===================================================== */
 
-  setReaction: async function (api, messageID, emoji) {
+  setReaction: async function (
+    api,
+    messageID,
+    emoji
+  ) {
     try {
       await new Promise((resolve) => {
         api.setMessageReaction(
@@ -44,60 +49,97 @@ module.exports = {
   },
 
   /* =====================================================
-     CHECK FACEBOOK / TIKTOK
+     FACEBOOK / TIKTOK CHECK
   ===================================================== */
 
   isSupportedUrl: function (url) {
+
     try {
-      const parsed = new URL(url);
+
+      const parsed =
+        new URL(url);
 
       const hostname =
         parsed.hostname
           .toLowerCase()
           .replace(/^www\./, "");
 
-      const facebook =
+      /*
+       * Facebook
+       */
+
+      const isFacebook =
         hostname === "facebook.com" ||
         hostname.endsWith(".facebook.com") ||
         hostname === "fb.watch";
 
-      const tiktok =
+      /*
+       * TikTok
+       */
+
+      const isTikTok =
         hostname === "tiktok.com" ||
         hostname.endsWith(".tiktok.com");
 
-      return facebook || tiktok;
+      return (
+        isFacebook ||
+        isTikTok
+      );
 
     } catch {
+
       return false;
+
     }
   },
 
   /* =====================================================
-     EXTRACT URL
+     EXTRACT FACEBOOK / TIKTOK URL
   ===================================================== */
 
   extractUrl: function (text) {
-    if (!text) return null;
+
+    if (!text) {
+      return null;
+    }
 
     const matches =
-      text.match(/https?:\/\/[^\s]+/gi);
+      text.match(
+        /https?:\/\/[^\s]+/gi
+      );
 
-    if (!matches) return null;
+    if (!matches) {
+      return null;
+    }
 
-    for (const rawUrl of matches) {
+    for (
+      const rawUrl of matches
+    ) {
 
       /*
-       * Messenger message-এর শেষে punctuation থাকলে
-       * সেটা URL থেকে বাদ দেওয়া হবে।
+       * URL-এর শেষে থাকা punctuation remove
        */
 
       const cleanUrl =
-        rawUrl.replace(/[),.!?]+$/g, "");
+        rawUrl
+          .replace(
+            /[),.!?]+$/g,
+            ""
+          );
+
+      /*
+       * Facebook / TikTok হলে
+       * সরাসরি return
+       */
 
       if (
-        this.isSupportedUrl(cleanUrl)
+        this.isSupportedUrl(
+          cleanUrl
+        )
       ) {
+
         return cleanUrl;
+
       }
     }
 
@@ -105,7 +147,7 @@ module.exports = {
   },
 
   /* =====================================================
-     DOWNLOAD VIDEO
+     DOWNLOAD + SEND
   ===================================================== */
 
   downloadAndSend: async function ({
@@ -116,6 +158,10 @@ module.exports = {
 
     let filePath = null;
 
+    /*
+     * Download শুরু
+     */
+
     await this.setReaction(
       api,
       event.messageID,
@@ -124,7 +170,7 @@ module.exports = {
 
     try {
 
-      /* =================================================
+      /* ================================================
          DOWNLOAD
       ================================================= */
 
@@ -134,28 +180,36 @@ module.exports = {
       if (
         !result ||
         !result.filePath ||
-        !fs.existsSync(result.filePath)
+        !fs.existsSync(
+          result.filePath
+        )
       ) {
+
         throw new Error(
           "Video file not found"
         );
+
       }
 
       filePath =
         result.filePath;
 
-      /* =================================================
-         25 MB CHECK
+      /* ================================================
+         25 MB LIMIT
       ================================================= */
 
       const stats =
-        fs.statSync(filePath);
+        fs.statSync(
+          filePath
+        );
 
       const sizeMB =
         stats.size /
         (1024 * 1024);
 
-      if (sizeMB > 25) {
+      if (
+        sizeMB > 25
+      ) {
 
         await this.setReaction(
           api,
@@ -163,14 +217,10 @@ module.exports = {
           "❌"
         );
 
-        try {
-          fs.unlinkSync(filePath);
-        } catch {}
-
         return;
       }
 
-      /* =================================================
+      /* ================================================
          SEND VIDEO
       ================================================= */
 
@@ -187,19 +237,21 @@ module.exports = {
 
             event.threadID,
 
-            (err) => {
+            (error) => {
 
-              if (err) {
-                reject(err);
+              if (error) {
+                reject(error);
               } else {
                 resolve();
               }
+
             }
           );
+
         }
       );
 
-      /* =================================================
+      /* ================================================
          SUCCESS
       ================================================= */
 
@@ -212,7 +264,7 @@ module.exports = {
     } catch (error) {
 
       console.error(
-        "[DOWNLOAD ERROR]",
+        "[DOWNLOAD]",
         error.message
       );
 
@@ -224,23 +276,29 @@ module.exports = {
 
     } finally {
 
-      /* =================================================
-         DELETE TEMP FILE
-      ================================================= */
+      /*
+       * Temporary file delete
+       */
 
       if (
         filePath &&
-        fs.existsSync(filePath)
+        fs.existsSync(
+          filePath
+        )
       ) {
+
         try {
-          fs.unlinkSync(filePath);
+          fs.unlinkSync(
+            filePath
+          );
         } catch {}
+
       }
     }
   },
 
   /* =====================================================
-     NORMAL COMMAND
+     DIRECT COMMAND
      
      /download <link>
   ===================================================== */
@@ -252,26 +310,43 @@ module.exports = {
   }) {
 
     const input =
-      args.join(" ").trim();
+      args
+        .join(" ")
+        .trim();
+
+    /*
+     * Link নেই
+     */
 
     if (!input) {
+
       await this.setReaction(
         api,
         event.messageID,
         "❌"
       );
+
       return;
     }
 
+    /*
+     * একই URL extractor
+     * reply এবং direct দুই জায়গাতেই
+     */
+
     const url =
-      this.extractUrl(input);
+      this.extractUrl(
+        input
+      );
 
     if (!url) {
+
       await this.setReaction(
         api,
         event.messageID,
         "❌"
       );
+
       return;
     }
 
@@ -283,11 +358,11 @@ module.exports = {
   },
 
   /* =====================================================
-     REPLY SYSTEM
+     ON CHAT
      
-     Reply to Facebook/TikTok link:
-     
-     download
+     Facebook/TikTok link দেখলে
+     সেই message-এর জন্য reply listener
+     তৈরি করা হবে।
   ===================================================== */
 
   onChat: async function ({
@@ -296,52 +371,191 @@ module.exports = {
   }) {
 
     const body =
-      (event.body || "").trim();
+      (
+        event.body || ""
+      ).trim();
 
     /*
-     * শুধু "download" হলে কাজ করবে।
+     * ---------------------------------------------------
+     * CASE 1
+     * 
+     * কেউ সরাসরি "download" লিখেছে
+     * এবং কোনো message reply করেছে।
+     * ---------------------------------------------------
      */
 
     if (
-      body.toLowerCase() !==
+      body.toLowerCase() ===
+      "download"
+    ) {
+
+      const repliedMessage =
+        event.messageReply;
+
+      if (
+        !repliedMessage
+      ) {
+        return;
+      }
+
+      const replyText =
+        repliedMessage.body ||
+        "";
+
+      /*
+       * Original message থেকে
+       * একই extractor ব্যবহার
+       */
+
+      const url =
+        this.extractUrl(
+          replyText
+        );
+
+      if (!url) {
+        return;
+      }
+
+      return this.downloadAndSend({
+        api,
+        event,
+        url
+      });
+    }
+
+    /*
+     * ---------------------------------------------------
+     * CASE 2
+     *
+     * Message-এর মধ্যে Facebook/TikTok link আছে।
+     *
+     * এটাকে reply করার পর:
+     *
+     * download
+     *
+     * লিখলে onChat সেটা ধরবে।
+     * ---------------------------------------------------
+     */
+
+    const url =
+      this.extractUrl(
+        body
+      );
+
+    if (!url) {
+      return;
+    }
+
+    /*
+     * Link message-এ reply data save
+     */
+
+    try {
+
+      /*
+       * GoatBot reply system
+       *
+       * Link message-এর ID-তে
+       * download command-এর information রাখা হচ্ছে।
+       */
+
+      global.GoatBot.onReply.set(
+        event.messageID,
+        {
+          commandName:
+            "download",
+
+          type:
+            "downloadVideo",
+
+          url:
+            url
+        }
+      );
+
+    } catch (error) {
+
+      console.error(
+        "[DOWNLOAD REPLY SET]",
+        error.message
+      );
+
+    }
+  },
+
+  /* =====================================================
+     ON REPLY
+     
+     Facebook/TikTok link message-এ
+     reply করে "download"
+  ===================================================== */
+
+  onReply: async function ({
+    api,
+    event,
+    Reply
+  }) {
+
+    if (!Reply) {
+      return;
+    }
+
+    /*
+     * শুধু download reply
+     */
+
+    const body =
+      (
+        event.body || ""
+      )
+      .trim()
+      .toLowerCase();
+
+    if (
+      body !==
       "download"
     ) {
       return;
     }
 
     /*
-     * Reply information দরকার।
+     * অন্য command-এর reply হলে
+     * কিছু করবে না
      */
 
-    const reply =
-      event.messageReply;
+    if (
+      Reply.commandName !==
+      "download"
+    ) {
+      return;
+    }
 
-    if (!reply) {
+    if (
+      Reply.type !==
+      "downloadVideo"
+    ) {
       return;
     }
 
     /*
-     * Reply করা message-এর text
-     */
-
-    let replyText =
-      reply.body || "";
-
-    /*
-     * কিছু Messenger message-এ
-     * body না থাকলেও URL থাকতে পারে।
+     * আগে থেকেই extracted URL
      */
 
     const url =
-      this.extractUrl(replyText);
+      Reply.url;
 
-    /*
-     * Supported URL না হলে silent থাকবে।
-     */
-
-    if (!url) {
+    if (
+      !url ||
+      !this.isSupportedUrl(
+        url
+      )
+    ) {
       return;
     }
+
+    /*
+     * Download শুরু
+     */
 
     return this.downloadAndSend({
       api,
