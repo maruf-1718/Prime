@@ -10,7 +10,7 @@ const DATA_FILE = path.join(__dirname, "mmc_data.json");
 
 const GITHUB_USERNAME = "maruf-1718";
 const GITHUB_REPO = "Prime";
-const GITHUB_BRANCH = "Main";
+const GITHUB_BRANCH = "main";
 const GITHUB_FILE_PATH = "scripts/cmds/mmc_data.json";
 
 const GITHUB_TOKEN =
