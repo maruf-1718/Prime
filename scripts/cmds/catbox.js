@@ -8,7 +8,9 @@ module.exports = {
     name: "catbox",
     version: "1.0.0",
     author: "Mohammad Maruf",
+
     role: 0,
+    countDown: 5,
 
     shortDescription: {
       en: "Upload media to Catbox"
@@ -21,77 +23,50 @@ module.exports = {
     category: "media",
 
     guide: {
-      en: "Reply to an image/video/audio with catbox"
-    },
-
-    cooldowns: 5
+      en: "{pn} — Reply to image/video/audio"
+    }
   },
 
   /* =====================================================
      DOWNLOAD ATTACHMENT
   ===================================================== */
 
-  downloadAttachment: async function (
-    url,
-    filePath
-  ) {
-    const response =
-      await axios.get(url, {
-        responseType: "stream",
-        timeout: 30000,
-        maxRedirects: 5
-      });
+  downloadAttachment: async function (url, filePath) {
+    const response = await axios({
+      method: "GET",
+      url,
+      responseType: "stream",
+      timeout: 60000,
+      maxRedirects: 10,
+      validateStatus: status =>
+        status >= 200 && status < 300
+    });
 
-    await new Promise(
-      (resolve, reject) => {
+    await new Promise((resolve, reject) => {
+      const writer = fs.createWriteStream(filePath);
 
-        const writer =
-          fs.createWriteStream(
-            filePath
-          );
+      response.data.pipe(writer);
 
-        response.data.pipe(
-          writer
-        );
+      writer.on("finish", resolve);
+      writer.on("error", reject);
 
-        writer.on(
-          "finish",
-          resolve
-        );
-
-        writer.on(
-          "error",
-          reject
-        );
-
-        response.data.on(
-          "error",
-          reject
-        );
-      }
-    );
+      response.data.on("error", reject);
+    });
 
     if (
-      !fs.existsSync(filePath)
+      !fs.existsSync(filePath) ||
+      fs.statSync(filePath).size === 0
     ) {
-      throw new Error(
-        "File download failed"
-      );
+      throw new Error("Attachment download failed");
     }
-
-    return filePath;
   },
 
   /* =====================================================
      UPLOAD TO CATBOX
   ===================================================== */
 
-  uploadToCatbox: async function (
-    filePath
-  ) {
-
-    const form =
-      new FormData();
+  uploadToCatbox: async function (filePath) {
+    const form = new FormData();
 
     form.append(
       "reqtype",
@@ -100,48 +75,36 @@ module.exports = {
 
     form.append(
       "fileToUpload",
-      fs.createReadStream(
-        filePath
-      )
+      fs.createReadStream(filePath)
     );
 
-    const response =
-      await axios.post(
-        "https://catbox.moe/user/api.php",
-        form,
-        {
-          headers: {
-            ...form.getHeaders()
-          },
+    const response = await axios.post(
+      "https://catbox.moe/user/api.php",
+      form,
+      {
+        headers: {
+          ...form.getHeaders()
+        },
 
-          timeout: 60000,
+        timeout: 120000,
 
-          maxContentLength:
-            Infinity,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
 
-          maxBodyLength:
-            Infinity
-        }
-      );
+        validateStatus: status =>
+          status >= 200 && status < 300
+      }
+    );
 
     const result =
-      String(
-        response.data || ""
-      ).trim();
-
-    /*
-     * Catbox সাধারণত direct URL return করে।
-     */
+      String(response.data || "").trim();
 
     if (
       !result ||
-      !/^https?:\/\/\S+$/i.test(
-        result
-      )
+      !/^https?:\/\/\S+$/i.test(result)
     ) {
       throw new Error(
-        result ||
-        "Catbox returned an invalid response"
+        result || "Invalid Catbox response"
       );
     }
 
@@ -149,13 +112,10 @@ module.exports = {
   },
 
   /* =====================================================
-     GET FILE EXTENSION
+     FILE EXTENSION
   ===================================================== */
 
-  getExtension: function (
-    attachment
-  ) {
-
+  getExtension: function (attachment) {
     const type =
       String(
         attachment?.type || ""
@@ -168,21 +128,15 @@ module.exports = {
       return "jpg";
     }
 
-    if (
-      type === "video"
-    ) {
+    if (type === "video") {
       return "mp4";
     }
 
-    if (
-      type === "audio"
-    ) {
+    if (type === "audio") {
       return "mp3";
     }
 
-    if (
-      type === "animated_image"
-    ) {
+    if (type === "animated_image") {
       return "gif";
     }
 
@@ -190,14 +144,13 @@ module.exports = {
   },
 
   /* =====================================================
-     MAIN
+     MAIN COMMAND
   ===================================================== */
 
   onStart: async function ({
     api,
     event
   }) {
-
     const {
       threadID,
       messageID,
@@ -205,7 +158,7 @@ module.exports = {
     } = event;
 
     /*
-     * Must reply to a message
+     * Must reply to media
      */
 
     if (
@@ -215,13 +168,16 @@ module.exports = {
       ) ||
       messageReply.attachments.length === 0
     ) {
-
       return api.sendMessage(
-        "❐ Please reply to an image, video or audio file.",
+        "❐ একটি image, video অথবা audio-তে reply করে command দাও।",
         threadID,
         messageID
       );
     }
+
+    /*
+     * Only downloadable attachments
+     */
 
     const attachments =
       messageReply.attachments.filter(
@@ -230,32 +186,26 @@ module.exports = {
           attachment.url
       );
 
-    if (
-      !attachments.length
-    ) {
-
+    if (!attachments.length) {
       return api.sendMessage(
-        "❌ No downloadable attachment found.",
+        "❌ Downloadable attachment পাওয়া যায়নি।",
         threadID,
         messageID
       );
     }
 
-    const uploadedLinks = [];
-    const failedFiles = [];
+    const links = [];
+    const failed = [];
 
-    /*
-     * ================================================
-     * PROCESS EACH ATTACHMENT
-     * ================================================
-     */
+    /* ===================================================
+       PROCESS FILES
+    =================================================== */
 
     for (
       let i = 0;
       i < attachments.length;
       i++
     ) {
-
       const attachment =
         attachments[i];
 
@@ -273,70 +223,49 @@ module.exports = {
         );
 
       try {
-
-        /*
-         * Download
-         */
+        /* Download */
 
         await this.downloadAttachment(
           attachment.url,
           filePath
         );
 
-        /*
-         * Upload
-         */
+        /* Upload */
 
         const link =
           await this.uploadToCatbox(
             filePath
           );
 
-        uploadedLinks.push(
-          link
-        );
+        links.push(link);
 
       } catch (error) {
-
         console.error(
           "[CATBOX ERROR]",
+          error.response?.data ||
           error.message
         );
 
-        failedFiles.push(
-          i + 1
-        );
+        failed.push(i + 1);
 
       } finally {
-
-        /*
-         * Always remove temporary file
-         */
+        /* Delete temporary file */
 
         if (
-          fs.existsSync(
-            filePath
-          )
+          fs.existsSync(filePath)
         ) {
-
           try {
-            fs.unlinkSync(
-              filePath
-            );
+            fs.unlinkSync(filePath);
           } catch {}
-
         }
       }
     }
 
-    /* =================================================
+    /* ===================================================
        RESULT
-    ================================================= */
+    =================================================== */
 
-    if (
-      uploadedLinks.length === 0
-    ) {
-
+    if (!links.length) {
       return api.sendMessage(
         "❌ Catbox upload failed.",
         threadID,
@@ -345,14 +274,11 @@ module.exports = {
     }
 
     let result =
-      uploadedLinks.join("\n");
+      links.join("\n");
 
-    if (
-      failedFiles.length > 0
-    ) {
-
+    if (failed.length) {
       result +=
-        `\n\n⚠️ Failed: ${failedFiles.length}`;
+        `\n\n⚠️ ${failed.length} file upload failed.`;
     }
 
     return api.sendMessage(
