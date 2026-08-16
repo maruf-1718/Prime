@@ -2,12 +2,13 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 const ytSearch = require("yt-search");
+const FormData = require("form-data");
 
-const API_CONFIG =
+const NIX_API =
   "https://raw.githubusercontent.com/aryannix/stuffs/master/raw/apis.json";
 
 const CACHE_DIR =
-  path.join(__dirname, "video_cache");
+  path.join(__dirname, "cache");
 
 module.exports = {
   config: {
@@ -23,7 +24,7 @@ module.exports = {
     },
 
     longDescription: {
-      en: "Search YouTube and reply with a number to download a selected video."
+      en: "Search YouTube and download selected video."
     },
 
     category: "media",
@@ -31,6 +32,76 @@ module.exports = {
     guide: {
       en: "{pn} <video name>"
     }
+  },
+
+  /* =====================================================
+     CATBOX UPLOAD
+  ===================================================== */
+
+  uploadCatbox: async function (filePath) {
+
+    const form = new FormData();
+
+    form.append(
+      "reqtype",
+      "fileupload"
+    );
+
+    form.append(
+      "fileToUpload",
+      fs.createReadStream(filePath)
+    );
+
+    const response = await axios.post(
+      "https://catbox.moe/user/api.php",
+      form,
+      {
+        headers: {
+          ...form.getHeaders()
+        },
+
+        timeout: 180000,
+
+        maxContentLength:
+          Infinity,
+
+        maxBodyLength:
+          Infinity,
+
+        validateStatus:
+          () => true
+      }
+    );
+
+    const result =
+      String(
+        response.data || ""
+      ).trim();
+
+    console.log(
+      "[CATBOX]",
+      response.status,
+      result
+    );
+
+    if (
+      response.status < 200 ||
+      response.status >= 300
+    ) {
+      throw new Error(
+        `Catbox HTTP ${response.status}: ${result}`
+      );
+    }
+
+    if (
+      !/^https?:\/\/\S+$/i.test(result)
+    ) {
+      throw new Error(
+        `Catbox invalid response: ${result}`
+      );
+    }
+
+    return result;
   },
 
   /* =====================================================
@@ -47,6 +118,7 @@ module.exports = {
       args.join(" ").trim();
 
     if (!query) {
+
       return api.sendMessage(
         "❌ Video name dao.",
         event.threadID,
@@ -54,10 +126,17 @@ module.exports = {
       );
     }
 
+    api.setMessageReaction(
+      "⌛",
+      event.messageID,
+      () => {},
+      true
+    );
+
     try {
 
       /* ===============================================
-         SEARCH YOUTUBE
+         YOUTUBE SEARCH
       =============================================== */
 
       const search =
@@ -65,13 +144,11 @@ module.exports = {
 
       if (
         !search ||
-        !Array.isArray(search.videos) ||
+        !search.videos ||
         !search.videos.length
       ) {
-        return api.sendMessage(
-          "❌ Kono video paoa jayni.",
-          event.threadID,
-          event.messageID
+        throw new Error(
+          "No video found"
         );
       }
 
@@ -98,17 +175,14 @@ module.exports = {
           `👤 ${video.author?.name || "Unknown"}\n` +
           `👁️ ${(video.views || 0).toLocaleString()}\n\n`;
 
-        /* -------------------------------------------
-           Thumbnail download
-        ------------------------------------------- */
-
         try {
 
           const image =
             await axios.get(
               video.thumbnail,
               {
-                responseType: "stream",
+                responseType:
+                  "stream",
                 timeout: 20000
               }
             );
@@ -117,32 +191,36 @@ module.exports = {
             image.data
           );
 
-        } catch {
-          /* Thumbnail fail হলেও search চলবে */
-        }
+        } catch {}
       }
 
       body +=
         `📥 Reply 1-${videos.length} to download`;
 
       /* ===============================================
-         SEND RESULT
+         SEND RESULTS
       =============================================== */
 
       api.sendMessage(
         {
           body,
-          attachment:
-            attachments.length
-              ? attachments
-              : undefined
+
+          ...(attachments.length
+            ? {
+                attachment:
+                  attachments
+              }
+            : {})
         },
 
         event.threadID,
 
         (error, info) => {
 
-          if (error || !info) {
+          if (
+            error ||
+            !info
+          ) {
             return;
           }
 
@@ -164,11 +242,25 @@ module.exports = {
         }
       );
 
+      api.setMessageReaction(
+        "✅",
+        event.messageID,
+        () => {},
+        true
+      );
+
     } catch (error) {
 
       console.error(
-        "[VIDEO SEARCH ERROR]",
+        "[VIDEO SEARCH]",
         error.message
+      );
+
+      api.setMessageReaction(
+        "❌",
+        event.messageID,
+        () => {},
+        true
       );
 
       return api.sendMessage(
@@ -188,10 +280,6 @@ module.exports = {
     event,
     Reply
   }) {
-
-    /* ===============================================
-       ONLY ORIGINAL USER
-    =============================================== */
 
     if (
       event.senderID !==
@@ -214,14 +302,14 @@ module.exports = {
     ) {
 
       return api.sendMessage(
-        `❌ 1-${Reply.videos.length} এর মধ্যে একটি number দাও।`,
+        `❌ 1-${Reply.videos.length} এর মধ্যে number দাও।`,
         event.threadID,
         event.messageID
       );
     }
 
     /* ===============================================
-       REMOVE RESULT MESSAGE
+       REMOVE RESULT
     =============================================== */
 
     if (
@@ -236,9 +324,11 @@ module.exports = {
     }
 
     try {
+
       global.GoatBot.onReply.delete(
         event.messageReply?.messageID
       );
+
     } catch {}
 
     const video =
@@ -246,109 +336,118 @@ module.exports = {
         choice - 1
       ];
 
-    const videoUrl =
+    const youtubeUrl =
       video.url;
 
-    /* ===============================================
-       CREATE CACHE
-    =============================================== */
-
-    await fs.ensureDir(
-      CACHE_DIR
-    );
-
-    const safeName =
-      String(
-        video.title || "youtube_video"
-      )
-        .replace(
-          /[\/\\:*?"<>|]/g,
-          ""
-        )
-        .replace(
-          /\s+/g,
-          "_"
-        )
-        .slice(0, 80);
-
-    const filePath =
-      path.join(
-        CACHE_DIR,
-        `${Date.now()}_${safeName}.mp4`
-      );
+    let filePath = null;
 
     try {
 
+      await fs.ensureDir(
+        CACHE_DIR
+      );
+
       /* =============================================
-         GET DOWNLOAD API
+         GET API
       ============================================= */
 
-      const configResponse =
+      const config =
         await axios.get(
-          API_CONFIG,
+          NIX_API,
           {
             timeout: 30000
           }
         );
 
       const apiUrl =
-        configResponse.data?.nixtube;
+        config.data?.api;
 
       if (!apiUrl) {
         throw new Error(
-          "Download API unavailable"
+          "API URL not found"
         );
       }
 
+      console.log(
+        "[YTDL API]",
+        apiUrl
+      );
+
       /* =============================================
-         GET DOWNLOAD URL
+         GET VIDEO DOWNLOAD URL
+
+         Same system as sing.js
       ============================================= */
 
-      const apiResponse =
+      const result =
         await axios.get(
-          apiUrl,
+          `${apiUrl}/ytdl`,
           {
             params: {
-              url: videoUrl,
+              url: youtubeUrl,
               type: "video"
             },
 
-            timeout: 120000
+            timeout: 180000
           }
         );
 
-      const data =
-        apiResponse.data;
+      console.log(
+        "[YTDL RESPONSE]",
+        result.data
+      );
 
       if (
-        !data ||
-        !data.downloadUrl
+        !result.data ||
+        !result.data.status ||
+        !result.data.downloadUrl
       ) {
-
-        console.error(
-          "[VIDEO API RESPONSE]",
-          data
-        );
-
         throw new Error(
-          "Download link unavailable"
+          "YTDL API did not return download URL"
         );
       }
 
       const downloadUrl =
-        data.downloadUrl;
+        result.data.downloadUrl;
 
       /* =============================================
-         DOWNLOAD FILE
+         DOWNLOAD VIDEO
       ============================================= */
 
-      const downloadResponse =
+      const safeName =
+        String(
+          result.data.title ||
+          video.title ||
+          "youtube_video"
+        )
+          .replace(
+            /[\/\\:*?"<>|]/g,
+            ""
+          )
+          .replace(
+            /\s+/g,
+            "_"
+          )
+          .slice(0, 80);
+
+      filePath =
+        path.join(
+          CACHE_DIR,
+          `${Date.now()}_${safeName}.mp4`
+        );
+
+      const download =
         await axios.get(
           downloadUrl,
           {
-            responseType: "stream",
-            timeout: 300000,
-            maxRedirects: 10
+            responseType:
+              "stream",
+
+            timeout:
+              300000,
+
+            maxRedirects:
+              10
           }
         );
 
@@ -360,7 +459,7 @@ module.exports = {
               filePath
             );
 
-          downloadResponse.data.pipe(
+          download.data.pipe(
             writer
           );
 
@@ -374,22 +473,20 @@ module.exports = {
             reject
           );
 
-          downloadResponse.data.on(
+          download.data.on(
             "error",
             reject
           );
         }
       );
 
-      /* =============================================
-         CHECK FILE
-      ============================================= */
-
       if (
-        !fs.existsSync(filePath)
+        !fs.existsSync(
+          filePath
+        )
       ) {
         throw new Error(
-          "Downloaded file not found"
+          "Video file missing"
         );
       }
 
@@ -402,31 +499,57 @@ module.exports = {
         stats.size <= 0
       ) {
         throw new Error(
-          "Downloaded file is empty"
+          "Empty video file"
         );
       }
 
       /* =============================================
-         SEND VIDEO
+         UPLOAD TO CATBOX
       ============================================= */
 
-      const caption =
-        `🎬 ${video.title}\n` +
-        `👤 ${video.author?.name || "Unknown"}\n` +
-        `⏱️ ${video.timestamp || "N/A"}\n` +
-        `👁️ ${(video.views || 0).toLocaleString()}`;
+      const catboxUrl =
+        await this.uploadCatbox(
+          filePath
+        );
+
+      console.log(
+        "[CATBOX URL]",
+        catboxUrl
+      );
+
+      /* =============================================
+         GET VIDEO BACK FROM CATBOX
+      ============================================= */
+
+      const catboxVideo =
+        await axios.get(
+          catboxUrl,
+          {
+            responseType:
+              "stream",
+
+            timeout:
+              300000
+          }
+        );
+
+      /* =============================================
+         SEND VIDEO
+      ============================================= */
 
       await new Promise(
         (resolve, reject) => {
 
           api.sendMessage(
             {
-              body: caption,
+              body:
+                `🎬 ${result.data.title || video.title}\n` +
+                `👤 ${video.author?.name || "Unknown"}\n` +
+                `⏱️ ${video.timestamp || "N/A"}\n\n` +
+                `🔗 ${catboxUrl}`,
 
               attachment:
-                fs.createReadStream(
-                  filePath
-                )
+                catboxVideo.data
             },
 
             event.threadID,
@@ -443,11 +566,25 @@ module.exports = {
         }
       );
 
+      api.setMessageReaction(
+        "🪽",
+        event.messageID,
+        () => {},
+        true
+      );
+
     } catch (error) {
 
       console.error(
-        "[VIDEO DOWNLOAD ERROR]",
+        "[VIDEO ERROR]",
         error.message
+      );
+
+      api.setMessageReaction(
+        "❌",
+        event.messageID,
+        () => {},
+        true
       );
 
       return api.sendMessage(
@@ -459,11 +596,14 @@ module.exports = {
     } finally {
 
       /* =============================================
-         DELETE TEMP FILE
+         DELETE LOCAL FILE
       ============================================= */
 
       if (
-        fs.existsSync(filePath)
+        filePath &&
+        fs.existsSync(
+          filePath
+        )
       ) {
 
         try {
@@ -471,7 +611,6 @@ module.exports = {
             filePath
           );
         } catch {}
-
       }
     }
   }
