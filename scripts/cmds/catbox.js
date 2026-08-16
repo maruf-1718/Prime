@@ -8,35 +8,34 @@ module.exports = {
     name: "catbox",
     version: "1.0.0",
     author: "Mohammad Maruf",
-
     role: 0,
     countDown: 5,
 
     shortDescription: {
-      en: "Upload media to Catbox"
+      en: "Upload video and audio to Catbox"
     },
 
     longDescription: {
-      en: "Reply to an image, video or audio and upload it to Catbox."
+      en: "Reply to a video or audio file to upload it to Catbox."
     },
 
     category: "media",
 
     guide: {
-      en: "{pn} — Reply to image/video/audio"
+      en: "{pn} - Reply to a video or audio"
     }
   },
 
   /* =====================================================
-     DOWNLOAD ATTACHMENT
+     DOWNLOAD FILE
   ===================================================== */
 
-  downloadAttachment: async function (url, filePath) {
+  downloadFile: async function (url, filePath) {
     const response = await axios({
       method: "GET",
-      url,
+      url: url,
       responseType: "stream",
-      timeout: 60000,
+      timeout: 120000,
       maxRedirects: 10,
       validateStatus: status =>
         status >= 200 && status < 300
@@ -53,11 +52,14 @@ module.exports = {
       response.data.on("error", reject);
     });
 
-    if (
-      !fs.existsSync(filePath) ||
-      fs.statSync(filePath).size === 0
-    ) {
-      throw new Error("Attachment download failed");
+    if (!fs.existsSync(filePath)) {
+      throw new Error("File download failed");
+    }
+
+    const size = fs.statSync(filePath).size;
+
+    if (size <= 0) {
+      throw new Error("Downloaded file is empty");
     }
   },
 
@@ -78,41 +80,72 @@ module.exports = {
       fs.createReadStream(filePath)
     );
 
-    const response = await axios.post(
-      "https://catbox.moe/user/api.php",
-      form,
-      {
-        headers: {
-          ...form.getHeaders()
-        },
+    try {
+      const response = await axios.post(
+        "https://catbox.moe/user/api.php",
+        form,
+        {
+          headers: {
+            ...form.getHeaders()
+          },
 
-        timeout: 120000,
+          timeout: 180000,
 
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
 
-        validateStatus: status =>
-          status >= 200 && status < 300
-      }
-    );
-
-    const result =
-      String(response.data || "").trim();
-
-    if (
-      !result ||
-      !/^https?:\/\/\S+$/i.test(result)
-    ) {
-      throw new Error(
-        result || "Invalid Catbox response"
+          validateStatus: () => true
+        }
       );
-    }
 
-    return result;
+      const result =
+        String(response.data || "").trim();
+
+      console.log(
+        "[CATBOX STATUS]",
+        response.status
+      );
+
+      console.log(
+        "[CATBOX RESPONSE]",
+        result
+      );
+
+      if (
+        response.status < 200 ||
+        response.status >= 300
+      ) {
+        throw new Error(
+          `Catbox HTTP ${response.status}: ${result}`
+        );
+      }
+
+      if (
+        !result ||
+        !/^https?:\/\/\S+$/i.test(result)
+      ) {
+        throw new Error(
+          result ||
+          "Catbox returned an invalid link"
+        );
+      }
+
+      return result;
+
+    } catch (error) {
+
+      console.error(
+        "[CATBOX UPLOAD ERROR]",
+        error.response?.data ||
+        error.message
+      );
+
+      throw error;
+    }
   },
 
   /* =====================================================
-     FILE EXTENSION
+     GET EXTENSION
   ===================================================== */
 
   getExtension: function (attachment) {
@@ -120,13 +153,6 @@ module.exports = {
       String(
         attachment?.type || ""
       ).toLowerCase();
-
-    if (
-      type === "photo" ||
-      type === "image"
-    ) {
-      return "jpg";
-    }
 
     if (type === "video") {
       return "mp4";
@@ -136,11 +162,7 @@ module.exports = {
       return "mp3";
     }
 
-    if (type === "animated_image") {
-      return "gif";
-    }
-
-    return "dat";
+    return null;
   },
 
   /* =====================================================
@@ -151,15 +173,16 @@ module.exports = {
     api,
     event
   }) {
+
     const {
       threadID,
       messageID,
       messageReply
     } = event;
 
-    /*
-     * Must reply to media
-     */
+    /* ===================================================
+       CHECK REPLY
+    =================================================== */
 
     if (
       !messageReply ||
@@ -168,37 +191,50 @@ module.exports = {
       ) ||
       messageReply.attachments.length === 0
     ) {
+
       return api.sendMessage(
-        "❐ একটি image, video অথবা audio-তে reply করে command দাও।",
+        "❌ Video অথবা Audio-তে reply করে catbox command দাও।",
         threadID,
         messageID
       );
     }
 
-    /*
-     * Only downloadable attachments
-     */
+    /* ===================================================
+       ONLY VIDEO + AUDIO
+    =================================================== */
 
     const attachments =
       messageReply.attachments.filter(
-        attachment =>
-          attachment &&
-          attachment.url
+        attachment => {
+
+          if (
+            !attachment ||
+            !attachment.url
+          ) {
+            return false;
+          }
+
+          return (
+            attachment.type === "video" ||
+            attachment.type === "audio"
+          );
+        }
       );
 
     if (!attachments.length) {
+
       return api.sendMessage(
-        "❌ Downloadable attachment পাওয়া যায়নি।",
+        "❌ শুধু Video এবং Audio support করে।",
         threadID,
         messageID
       );
     }
 
     const links = [];
-    const failed = [];
+    const errors = [];
 
     /* ===================================================
-       PROCESS FILES
+       PROCESS EACH FILE
     =================================================== */
 
     for (
@@ -206,6 +242,7 @@ module.exports = {
       i < attachments.length;
       i++
     ) {
+
       const attachment =
         attachments[i];
 
@@ -223,14 +260,19 @@ module.exports = {
         );
 
       try {
-        /* Download */
 
-        await this.downloadAttachment(
+        /* -----------------------------------------------
+           DOWNLOAD
+        ----------------------------------------------- */
+
+        await this.downloadFile(
           attachment.url,
           filePath
         );
 
-        /* Upload */
+        /* -----------------------------------------------
+           UPLOAD
+        ----------------------------------------------- */
 
         const link =
           await this.uploadToCatbox(
@@ -240,45 +282,78 @@ module.exports = {
         links.push(link);
 
       } catch (error) {
+
         console.error(
-          "[CATBOX ERROR]",
-          error.response?.data ||
-          error.message
+          "[CATBOX FILE ERROR]",
+          error
         );
 
-        failed.push(i + 1);
+        errors.push(
+          `File ${i + 1}: ${
+            error.message || "Unknown error"
+          }`
+        );
 
       } finally {
-        /* Delete temporary file */
+
+        /* -----------------------------------------------
+           DELETE TEMP FILE
+        ----------------------------------------------- */
 
         if (
           fs.existsSync(filePath)
         ) {
+
           try {
             fs.unlinkSync(filePath);
           } catch {}
+
         }
       }
     }
 
     /* ===================================================
-       RESULT
+       NO SUCCESS
     =================================================== */
 
     if (!links.length) {
+
       return api.sendMessage(
-        "❌ Catbox upload failed.",
+        "❌ Catbox upload failed.\n\n" +
+        errors.join("\n"),
         threadID,
         messageID
       );
     }
 
-    let result =
-      links.join("\n");
+    /* ===================================================
+       SUCCESS LINKS
+    =================================================== */
 
-    if (failed.length) {
+    let result =
+      "╭━━━━〔 🐱 CATBOX 〕━━━━╮\n\n";
+
+    links.forEach(
+      (link, index) => {
+
+        result +=
+          `🎬 File ${index + 1}\n` +
+          `${link}\n\n`;
+      }
+    );
+
+    result +=
+      "╰━━━━━━━━━━━━━━━━━━╯";
+
+    /* ===================================================
+       FAILED FILES
+    =================================================== */
+
+    if (errors.length) {
+
       result +=
-        `\n\n⚠️ ${failed.length} file upload failed.`;
+        "\n\n⚠️ Failed:\n" +
+        errors.join("\n");
     }
 
     return api.sendMessage(
