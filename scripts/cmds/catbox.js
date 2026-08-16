@@ -16,13 +16,13 @@ module.exports = {
     },
 
     longDescription: {
-      en: "Reply to a video or audio file to upload it to Catbox."
+      en: "Reply to a video or audio and upload it to Catbox."
     },
 
     category: "media",
 
     guide: {
-      en: "{pn} - Reply to a video or audio"
+      en: "{pn} - Reply to video/audio"
     }
   },
 
@@ -31,14 +31,10 @@ module.exports = {
   ===================================================== */
 
   downloadFile: async function (url, filePath) {
-    const response = await axios({
-      method: "GET",
-      url: url,
+    const response = await axios.get(url, {
       responseType: "stream",
       timeout: 120000,
-      maxRedirects: 10,
-      validateStatus: status =>
-        status >= 200 && status < 300
+      maxRedirects: 10
     });
 
     await new Promise((resolve, reject) => {
@@ -48,12 +44,11 @@ module.exports = {
 
       writer.on("finish", resolve);
       writer.on("error", reject);
-
       response.data.on("error", reject);
     });
 
     if (!fs.existsSync(filePath)) {
-      throw new Error("File download failed");
+      throw new Error("Unable to download attachment");
     }
 
     const size = fs.statSync(filePath).size;
@@ -64,16 +59,13 @@ module.exports = {
   },
 
   /* =====================================================
-     UPLOAD TO CATBOX
+     CATBOX UPLOAD
   ===================================================== */
 
   uploadToCatbox: async function (filePath) {
     const form = new FormData();
 
-    form.append(
-      "reqtype",
-      "fileupload"
-    );
+    form.append("reqtype", "fileupload");
 
     form.append(
       "fileToUpload",
@@ -98,45 +90,41 @@ module.exports = {
         }
       );
 
-      const result =
+      const status = response.status;
+
+      const body =
         String(response.data || "").trim();
 
       console.log(
-        "[CATBOX STATUS]",
-        response.status
+        "[CATBOX] HTTP:",
+        status
       );
 
       console.log(
-        "[CATBOX RESPONSE]",
-        result
+        "[CATBOX] RESPONSE:",
+        body
       );
 
-      if (
-        response.status < 200 ||
-        response.status >= 300
-      ) {
+      if (status < 200 || status >= 300) {
         throw new Error(
-          `Catbox HTTP ${response.status}: ${result}`
+          `Catbox HTTP ${status}: ${body || "No response"}`
         );
       }
 
       if (
-        !result ||
-        !/^https?:\/\/\S+$/i.test(result)
+        !/^https?:\/\/\S+$/i.test(body)
       ) {
         throw new Error(
-          result ||
-          "Catbox returned an invalid link"
+          `Catbox invalid response: ${body || "empty"}`
         );
       }
 
-      return result;
+      return body;
 
     } catch (error) {
 
       console.error(
         "[CATBOX UPLOAD ERROR]",
-        error.response?.data ||
         error.message
       );
 
@@ -145,7 +133,7 @@ module.exports = {
   },
 
   /* =====================================================
-     GET EXTENSION
+     EXTENSION
   ===================================================== */
 
   getExtension: function (attachment) {
@@ -174,24 +162,24 @@ module.exports = {
     event
   }) {
 
-    const {
-      threadID,
-      messageID,
-      messageReply
-    } = event;
+    const threadID =
+      event.threadID;
 
-    /* ===================================================
+    const messageID =
+      event.messageID;
+
+    const reply =
+      event.messageReply;
+
+    /* ---------------------------------------------------
        CHECK REPLY
-    =================================================== */
+    --------------------------------------------------- */
 
     if (
-      !messageReply ||
-      !Array.isArray(
-        messageReply.attachments
-      ) ||
-      messageReply.attachments.length === 0
+      !reply ||
+      !Array.isArray(reply.attachments) ||
+      !reply.attachments.length
     ) {
-
       return api.sendMessage(
         "❌ Video অথবা Audio-তে reply করে catbox command দাও।",
         threadID,
@@ -199,30 +187,22 @@ module.exports = {
       );
     }
 
-    /* ===================================================
+    /* ---------------------------------------------------
        ONLY VIDEO + AUDIO
-    =================================================== */
+    --------------------------------------------------- */
 
     const attachments =
-      messageReply.attachments.filter(
-        attachment => {
-
-          if (
-            !attachment ||
-            !attachment.url
-          ) {
-            return false;
-          }
-
-          return (
-            attachment.type === "video" ||
-            attachment.type === "audio"
-          );
-        }
+      reply.attachments.filter(
+        item =>
+          item &&
+          item.url &&
+          (
+            item.type === "video" ||
+            item.type === "audio"
+          )
       );
 
     if (!attachments.length) {
-
       return api.sendMessage(
         "❌ শুধু Video এবং Audio support করে।",
         threadID,
@@ -231,11 +211,10 @@ module.exports = {
     }
 
     const links = [];
-    const errors = [];
 
-    /* ===================================================
-       PROCESS EACH FILE
-    =================================================== */
+    /* ---------------------------------------------------
+       PROCESS
+    --------------------------------------------------- */
 
     for (
       let i = 0;
@@ -246,33 +225,33 @@ module.exports = {
       const attachment =
         attachments[i];
 
-      const ext =
+      const extension =
         this.getExtension(
           attachment
         );
+
+      if (!extension) {
+        continue;
+      }
 
       const filePath =
         path.join(
           __dirname,
           `catbox_${Date.now()}_${i}_${Math.random()
             .toString(36)
-            .slice(2)}.${ext}`
+            .slice(2)}.${extension}`
         );
 
       try {
 
-        /* -----------------------------------------------
-           DOWNLOAD
-        ----------------------------------------------- */
+        /* Download */
 
         await this.downloadFile(
           attachment.url,
           filePath
         );
 
-        /* -----------------------------------------------
-           UPLOAD
-        ----------------------------------------------- */
+        /* Upload */
 
         const link =
           await this.uploadToCatbox(
@@ -284,80 +263,42 @@ module.exports = {
       } catch (error) {
 
         console.error(
-          "[CATBOX FILE ERROR]",
-          error
-        );
-
-        errors.push(
-          `File ${i + 1}: ${
-            error.message || "Unknown error"
-          }`
+          `[CATBOX] File ${i + 1} failed:`,
+          error.message
         );
 
       } finally {
 
-        /* -----------------------------------------------
-           DELETE TEMP FILE
-        ----------------------------------------------- */
+        /* Delete temporary file */
 
         if (
           fs.existsSync(filePath)
         ) {
-
           try {
             fs.unlinkSync(filePath);
           } catch {}
-
         }
       }
     }
 
-    /* ===================================================
-       NO SUCCESS
-    =================================================== */
+    /* ---------------------------------------------------
+       SUCCESS
+    --------------------------------------------------- */
 
-    if (!links.length) {
-
+    if (links.length) {
       return api.sendMessage(
-        "❌ Catbox upload failed.\n\n" +
-        errors.join("\n"),
+        links.join("\n"),
         threadID,
         messageID
       );
     }
 
-    /* ===================================================
-       SUCCESS LINKS
-    =================================================== */
-
-    let result =
-      "\n\n";
-
-    links.forEach(
-      (link, index) => {
-
-        result +=
-          `${index + 1}\n` +
-          `${link}\n\n`;
-      }
-    );
-
-    result +=
-      "";
-
-    /* ===================================================
-       FAILED FILES
-    =================================================== */
-
-    if (errors.length) {
-
-      result +=
-        "\n\n⚠️ Failed:\n" +
-        errors.join("\n");
-    }
+    /* ---------------------------------------------------
+       FAILED
+    --------------------------------------------------- */
 
     return api.sendMessage(
-      result,
+      "❌ Catbox upload failed.",
       threadID,
       messageID
     );
