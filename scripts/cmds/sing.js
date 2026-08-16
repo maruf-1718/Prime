@@ -23,7 +23,7 @@ module.exports = {
     const q = args.join(" ");
     if (!q) return api.sendMessage("❌ Please provide a song name or link.", t, m);
 
-    api.setMessageReaction("⏳", m, () => {}, true);
+    api.setMessageReaction("🔰", m, () => {}, true);
 
     try {
       const D = await A.get(nix);
@@ -49,7 +49,7 @@ module.exports = {
       const res = await A.get(DL, { responseType: "arraybuffer" });
       await B.outputFile(p, Buffer.from(res.data));
 
-      api.setMessageReaction("✅", m, () => {}, true);
+      api.setMessageReaction("🪽", m, () => {}, true);
 
       return api.sendMessage({
         body: `🎵 Title: ${title}`,
@@ -59,8 +59,8 @@ module.exports = {
       }, m);
 
     } catch (e) {
-      api.setMessageReaction("❌", m, () => {}, true);
-      return api.sendMessage(`❌ Error: ${e.message}`, t, m);
+      api.setMessageReaction("⚠️", m, () => {}, true);
+      return api.sendMessage(`⚠️ Error: ${e.message}`, t, m);
     }
   }
 };
