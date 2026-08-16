@@ -27,7 +27,7 @@ module.exports = {
   },
 
   /* =====================================================
-     DOWNLOAD ATTACHMENT
+     DOWNLOAD FILE
   ===================================================== */
 
   downloadFile: async function (url, filePath) {
@@ -80,60 +80,72 @@ module.exports = {
       fs.createReadStream(filePath)
     );
 
-    const response = await axios.post(
-      "https://catbox.moe/user/api.php",
-      form,
-      {
-        headers: {
-          ...form.getHeaders()
-        },
+    try {
+      const response = await axios.post(
+        "https://catbox.moe/user/api.php",
+        form,
+        {
+          headers: {
+            ...form.getHeaders()
+          },
 
-        timeout: 180000,
+          timeout: 180000,
 
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
 
-        validateStatus: () => true
+          validateStatus: () => true
+        }
+      );
+
+      const result =
+        String(response.data || "").trim();
+
+      console.log(
+        "[CATBOX STATUS]",
+        response.status
+      );
+
+      console.log(
+        "[CATBOX RESPONSE]",
+        result
+      );
+
+      if (
+        response.status < 200 ||
+        response.status >= 300
+      ) {
+        throw new Error(
+          `Catbox HTTP ${response.status}: ${result}`
+        );
       }
-    );
 
-    const result =
-      String(response.data || "").trim();
+      if (
+        !result ||
+        !/^https?:\/\/\S+$/i.test(result)
+      ) {
+        throw new Error(
+          result ||
+          "Catbox returned an invalid link"
+        );
+      }
 
-    console.log(
-      "[CATBOX STATUS]",
-      response.status
-    );
+      return result;
 
-    console.log(
-      "[CATBOX RESPONSE]",
-      result
-    );
+    } catch (error) {
 
-    if (
-      response.status < 200 ||
-      response.status >= 300
-    ) {
-      throw new Error(
-        `Catbox HTTP ${response.status}`
+      console.error(
+        "[CATBOX UPLOAD ERROR]",
+        error.response?.data ||
+        error.message
       );
-    }
 
-    if (
-      !result ||
-      !/^https?:\/\/\S+$/i.test(result)
-    ) {
-      throw new Error(
-        result ||
-        "Catbox returned an invalid link"
-      );
+      throw error;
     }
-
-    return result;
   },
 
   /* =====================================================
-     GET FILE EXTENSION
+     GET EXTENSION
   ===================================================== */
 
   getExtension: function (attachment) {
@@ -219,9 +231,10 @@ module.exports = {
     }
 
     const links = [];
+    const errors = [];
 
     /* ===================================================
-       PROCESS FILES
+       PROCESS EACH FILE
     =================================================== */
 
     for (
@@ -237,10 +250,6 @@ module.exports = {
         this.getExtension(
           attachment
         );
-
-      if (!ext) {
-        continue;
-      }
 
       const filePath =
         path.join(
@@ -275,8 +284,14 @@ module.exports = {
       } catch (error) {
 
         console.error(
-          "[CATBOX ERROR]",
-          error.message
+          "[CATBOX FILE ERROR]",
+          error
+        );
+
+        errors.push(
+          `File ${i + 1}: ${
+            error.message || "Unknown error"
+          }`
         );
 
       } finally {
@@ -298,26 +313,51 @@ module.exports = {
     }
 
     /* ===================================================
-       ALL FAILED
+       NO SUCCESS
     =================================================== */
 
     if (!links.length) {
 
       return api.sendMessage(
-        "❌ Catbox upload failed.",
+        "❌ Catbox upload failed.\n\n" +
+        errors.join("\n"),
         threadID,
         messageID
       );
     }
 
     /* ===================================================
-       SUCCESS
-       
-       ONLY DIRECT LINKS
+       SUCCESS LINKS
     =================================================== */
 
+    let result =
+      "\n\n";
+
+    links.forEach(
+      (link, index) => {
+
+        result +=
+          `${index + 1}\n` +
+          `${link}\n\n`;
+      }
+    );
+
+    result +=
+      "";
+
+    /* ===================================================
+       FAILED FILES
+    =================================================== */
+
+    if (errors.length) {
+
+      result +=
+        "\n\n⚠️ Failed:\n" +
+        errors.join("\n");
+    }
+
     return api.sendMessage(
-      links.join("\n"),
+      result,
       threadID,
       messageID
     );
